@@ -2,7 +2,7 @@
 
 import { StatsCard } from "@/components/ui/stats-card";
 import { DataTable } from "@/components/ui/data-table";
-import { mockSales, mockAlerts, mockBranches, mockMedicines } from "@/lib/mock-data";
+import { mockSales, mockAlerts, mockBranches } from "@/lib/mock-data";
 
 const saleColumns = [
   { key: "time", header: "Time" },
