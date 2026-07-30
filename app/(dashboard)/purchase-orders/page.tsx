@@ -102,6 +102,7 @@ export default function PurchaseOrdersPage() {
 
           {item.status === "draft" && (
             <button
+              onClick={() => router.push(`/purchase-orders/${item.id}`)}
               className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950"
               title="Send Order"
             >
