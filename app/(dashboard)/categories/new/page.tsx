@@ -9,6 +9,7 @@ export default function NewCategoryPage() {
   const router = useRouter();
   const [form, setForm] = useState({
     name: "",
+    slug: "",
     description: "",
     branch_id: "",
     status: "active",
@@ -50,6 +51,22 @@ export default function NewCategoryPage() {
                 placeholder="e.g., Pain Relief"
                 className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
               />
+            </div>
+
+            <div>
+              <label htmlFor="slug" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                Slug
+              </label>
+              <input
+                id="slug"
+                type="text"
+                required
+                value={form.slug}
+                onChange={(e) => setForm({ ...form, slug: e.target.value })}
+                placeholder="e.g., pain-relief"
+                className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm font-mono placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+              />
+              <p className="mt-1 text-xs text-neutral-500">URL-friendly identifier. Auto-generated from name if left empty.</p>
             </div>
 
             <div>

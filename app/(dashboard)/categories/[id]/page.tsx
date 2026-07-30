@@ -12,6 +12,7 @@ export default function CategoryDetailPage() {
 
   const [form, setForm] = useState({
     name: category?.name ?? "",
+    slug: category?.slug ?? "",
     description: category?.description ?? "",
     branch_id: category?.branch_id?.toString() ?? "",
     status: category?.status ?? "active",
@@ -71,6 +72,21 @@ export default function CategoryDetailPage() {
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="e.g., Pain Relief"
                 className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="slug" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                Slug
+              </label>
+              <input
+                id="slug"
+                type="text"
+                required
+                value={form.slug}
+                onChange={(e) => setForm({ ...form, slug: e.target.value })}
+                placeholder="e.g., pain-relief"
+                className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm font-mono placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
               />
             </div>
 
