@@ -111,12 +111,12 @@ export default function ReceivePage() {
                 <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 text-right">Received Total (Packs)</th>
                 <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 text-right">Remaining (Packs)</th>
                 <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 text-right">Receive Now (Packs)</th>
-                <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500" hide-on-mobile>Batch #</th>
-                <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500" hide-on-mobile>Expiry Date</th>
-                <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 text-right" hide-on-mobile>Purchase Price (Per Pack)</th>
-                <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 text-right" hide-on-mobile>Profit %</th>
-                <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 text-right" hide-on-mobile>Pack Price (Sell)</th>
-                <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 text-right" hide-on-mobile>Single Price (Sell)</th>
+                <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 hidden lg:table-cell">Batch #</th>
+                <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 hidden lg:table-cell">Expiry Date</th>
+                <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 text-right hidden lg:table-cell">Purchase Price (Per Pack)</th>
+                <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 text-right hidden lg:table-cell">Profit %</th>
+                <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 text-right hidden lg:table-cell">Pack Price (Sell)</th>
+                <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 text-right hidden lg:table-cell">Single Price (Sell)</th>
               </tr>
             </thead>
             <tbody>
