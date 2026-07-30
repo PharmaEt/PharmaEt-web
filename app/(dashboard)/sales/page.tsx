@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Search, Eye } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
@@ -19,6 +20,7 @@ const mockSales = [
 ];
 
 export default function SalesPage() {
+  const router = useRouter();
   const [search, setSearch] = useState("");
 
   const filtered = mockSales.filter((s) =>
@@ -86,8 +88,11 @@ export default function SalesPage() {
       key: "actions",
       header: "",
       className: "w-12",
-      render: () => (
-        <button className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800">
+      render: (item: typeof mockSales[0]) => (
+        <button
+          onClick={() => router.push(`/sales/${item.id}`)}
+          className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
+        >
           <Eye className="h-3.5 w-3.5" />
         </button>
       ),
