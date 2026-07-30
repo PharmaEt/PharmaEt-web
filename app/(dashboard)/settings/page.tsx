@@ -1,9 +1,11 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { mockBranches } from "@/lib/mock-data";
 
 export default function SettingsPage() {
+  const router = useRouter();
   const { user } = useAuth();
 
   const userBranch = mockBranches.find((b) => b.id === user?.branch_id);
@@ -69,7 +71,10 @@ export default function SettingsPage() {
               <p className="text-sm font-medium">Password</p>
               <p className="text-xs text-neutral-500">Last changed 30 days ago</p>
             </div>
-            <button className="rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-900">
+            <button
+              onClick={() => router.push("/profile")}
+              className="rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-900"
+            >
               Change
             </button>
           </div>
@@ -78,7 +83,10 @@ export default function SettingsPage() {
               <p className="text-sm font-medium">Telegram Notifications</p>
               <p className="text-xs text-neutral-500">{user?.telegram_chat_id ?? "Not configured"}</p>
             </div>
-            <button className="rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-900">
+            <button
+              onClick={() => alert("Telegram configuration coming soon")}
+              className="rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-900"
+            >
               Configure
             </button>
           </div>
