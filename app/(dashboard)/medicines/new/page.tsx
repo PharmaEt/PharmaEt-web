@@ -20,6 +20,7 @@ export default function NewMedicinePage() {
     min_stock_alert: "",
     is_prescription_required: false,
     description: "",
+    status: "active",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -227,6 +228,21 @@ export default function NewMedicinePage() {
               <label htmlFor="is_prescription_required" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
                 Prescription Required
               </label>
+            </div>
+
+            <div>
+              <label htmlFor="status" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                Status
+              </label>
+              <select
+                id="status"
+                value={form.status}
+                onChange={(e) => setForm({ ...form, status: e.target.value })}
+                className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
             </div>
 
             <div>
