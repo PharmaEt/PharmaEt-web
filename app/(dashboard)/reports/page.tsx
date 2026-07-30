@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Download } from "lucide-react";
+import { Download, Search } from "lucide-react";
+import { DataTable } from "@/components/ui/data-table";
 import { mockMedicines, mockCategories } from "@/lib/mock-data";
 
 const mockSales = [
