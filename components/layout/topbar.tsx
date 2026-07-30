@@ -35,9 +35,24 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
     const breadcrumbs = [{ label: "Dashboard", href: "/", isLast: false }];
     let currentPath = "";
 
-    for (const part of parts) {
-      currentPath += `/${part}`;
-      const label = pageTitles[currentPath] || part.charAt(0).toUpperCase() + part.slice(1).replace(/-/g, " ");
+    for (let i = 0; i < parts.length; i++) {
+      currentPath += `/${parts[i]}`;
+      let label = pageTitles[currentPath];
+
+      if (!label) {
+        const prev = i > 0 ? `/${parts[i - 1]}` : "";
+        if (parts[i] === "new") {
+          const parentName = pageTitles[prev]?.replace(/s$/, "") ?? prev.slice(1).replace(/-/g, " ");
+          label = `Add ${parentName.charAt(0).toUpperCase() + parentName.slice(1)}`;
+        } else if (/^\d+$/.test(parts[i])) {
+          const parentName = pageTitles[prev] ?? prev.slice(1).replace(/-/g, " ");
+          label = parentName.charAt(0).toUpperCase() + parentName.slice(1);
+        } else if (parts[i] === "receive") {
+          label = "Receive";
+        } else {
+          label = parts[i].charAt(0).toUpperCase() + parts[i].slice(1).replace(/-/g, " ");
+        }
+      }
       breadcrumbs.push({ label, href: currentPath, isLast: false });
     }
 
