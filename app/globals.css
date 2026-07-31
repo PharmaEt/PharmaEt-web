@@ -75,3 +75,26 @@
     @apply bg-background text-foreground;
   }
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .receipt-container,
+  .receipt-container * {
+    visibility: visible;
+  }
+  .receipt-container {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%);
+    width: 300px;
+    padding: 0;
+    background: white;
+    border: none;
+  }
+  .receipt-container .no-print {
+    display: none !important;
+  }
+}

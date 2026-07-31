@@ -716,12 +716,21 @@ export default function POSPage() {
                   branch: "Bole Branch",
                 }}
               />
-              <button
-                onClick={resetSale}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-md bg-neutral-900 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-neutral-700 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
-              >
-                New Sale
-              </button>
+              <div className="mt-4 flex gap-3">
+                <button
+                  onClick={() => window.print()}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-md border border-neutral-200 px-4 py-3 text-sm font-medium transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900"
+                >
+                  <Printer className="h-4 w-4" />
+                  Print Receipt
+                </button>
+                <button
+                  onClick={resetSale}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-md bg-neutral-900 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-neutral-700 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
+                >
+                  New Sale
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -132,7 +132,16 @@ export default function SaleDetailPage() {
 
       {/* Receipt Section */}
       <div className="rounded-lg border border-border bg-white p-5 dark:bg-[#0A0A0A]">
-        <h2 className="mb-4 text-sm font-medium">Receipt</h2>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-sm font-medium">Receipt</h2>
+          <button
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-900"
+          >
+            <Printer className="h-3.5 w-3.5" />
+            Print Receipt
+          </button>
+        </div>
         <Receipt
           data={{
             saleId: `SALE-${String(sale.id).padStart(3, "0")}`,
