@@ -708,6 +708,7 @@ export default function POSPage() {
                     qty: item.quantity,
                     price: item.price,
                     total: item.price * item.quantity,
+                    unit: item.unit,
                   })),
                   subtotal,
                   discount: discountAmount,

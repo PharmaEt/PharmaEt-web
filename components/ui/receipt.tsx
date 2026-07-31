@@ -8,6 +8,7 @@ export interface ReceiptItem {
   qty: number;
   price: number;
   total: number;
+  unit?: "pack" | "single";
 }
 
 export interface ReceiptData {
@@ -179,7 +180,7 @@ export function Receipt({ data, onPrint }: ReceiptProps) {
         {data.items.map((item, idx) => (
           <div key={idx}>
             <div className="flex justify-between py-1">
-              <span className="flex-1 truncate">{item.name}</span>
+              <span className="flex-1 truncate">{item.name}{item.unit ? ` (${item.unit})` : ""}</span>
               <span className="w-8 text-right">{item.qty}</span>
               <span className="w-16 text-right">{item.total.toFixed(2)}</span>
             </div>

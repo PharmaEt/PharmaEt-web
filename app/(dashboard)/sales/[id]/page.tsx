@@ -7,12 +7,12 @@ import { Receipt, type ReceiptData } from "@/components/ui/receipt";
 
 const mockSales = [
   { id: 1, date: "2026-07-28", time: "10:30 AM", cashier: "Omar Ibrahim", payment: "Cash", prescription: false, items: [
-    { name: "Paracetamol 500mg", qty: 2, price: 45, total: 90 },
-    { name: "Amoxicillin 250mg", qty: 1, price: 120, total: 120 },
-    { name: "Cetirizine 10mg", qty: 1, price: 35, total: 35 },
+    { name: "Paracetamol 500mg", qty: 2, price: 45, total: 90, unit: "pack" as const },
+    { name: "Amoxicillin 250mg", qty: 1, price: 120, total: 120, unit: "single" as const },
+    { name: "Cetirizine 10mg", qty: 1, price: 35, total: 35, unit: "pack" as const },
   ], subtotal: 245, discount: 0, tax: 36.75, total: 281.75 },
   { id: 2, date: "2026-07-28", time: "11:15 AM", cashier: "Omar Ibrahim", payment: "Telebirr", prescription: true, items: [
-    { name: "Metformin 500mg", qty: 1, price: 120, total: 120 },
+    { name: "Metformin 500mg", qty: 1, price: 120, total: 120, unit: "single" as const },
   ], subtotal: 120, discount: 10, tax: 16.5, total: 126.5 },
 ];
 
