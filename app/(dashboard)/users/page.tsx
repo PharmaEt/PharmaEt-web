@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Eye, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -81,16 +81,9 @@ export default function UsersPage() {
     {
       key: "actions",
       header: "",
-      className: "w-24",
+      className: "w-20",
       render: (item: typeof mockUsers[0]) => (
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => router.push(`/users/${item.id}`)}
-            aria-label="View"
-            className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
-          >
-            <Eye className="h-3.5 w-3.5" />
-          </button>
           <button
             onClick={() => router.push(`/users/${item.id}`)}
             aria-label="Edit"
