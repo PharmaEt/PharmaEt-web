@@ -79,9 +79,9 @@ export default function PurchaseOrderDetailPage() {
         <button
           onClick={() => router.back()}
           aria-label="Go back"
-          className="rounded-md bg-transparent px-4 py-2 text-sm font-medium text-neutral-600 transition-colors duration-150 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+          className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
         >
-          Back to Purchase Orders
+          <ArrowLeft className="h-4 w-4" />
         </button>
           <div>
             <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Order Not Found</h1>
@@ -206,16 +206,6 @@ export default function PurchaseOrderDetailPage() {
           </button>
         </div>
       )}
-
-      <div>
-        <button
-          onClick={() => router.back()}
-          aria-label="Go back"
-          className="rounded-md bg-transparent px-4 py-2 text-sm font-medium text-neutral-600 transition-colors duration-150 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
-        >
-          Back to Purchase Orders
-        </button>
-      </div>
     </div>
   );
 }

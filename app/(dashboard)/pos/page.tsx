@@ -498,6 +498,7 @@ export default function POSPage() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setShowMobileCart(false)}
+                  aria-label="Close cart"
                   className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
                 >
                   <X className="h-4 w-4" />

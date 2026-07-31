@@ -69,6 +69,7 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuClick}
+          aria-label="Open menu"
           className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 lg:hidden"
         >
           <Menu className="h-[18px] w-[18px]" />

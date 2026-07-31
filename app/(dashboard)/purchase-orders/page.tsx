@@ -6,6 +6,7 @@ import { Plus, Search, Eye, Send, Truck, XCircle } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useToast } from "@/components/ui/toast";
 
 const mockPOs = [
   { id: 1, supplier: "Ethio Pharma Distribution", date: "2026-07-25", items: 5, total: 45000, status: "received" },
@@ -17,11 +18,13 @@ const mockPOs = [
 
 export default function PurchaseOrdersPage() {
   const router = useRouter();
+  const { toast } = useToast();
+  const [pos, setPos] = useState(mockPOs);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [cancelId, setCancelId] = useState<number | null>(null);
 
-  const filtered = mockPOs.filter((po) => {
+  const filtered = pos.filter((po) => {
     const matchesSearch = po.supplier.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === "all" || po.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -176,7 +179,11 @@ export default function PurchaseOrdersPage() {
         open={cancelId !== null}
         title="Cancel purchase order?"
         description="This will cancel the purchase order. This action cannot be undone."
-        onConfirm={() => setCancelId(null)}
+        onConfirm={() => {
+          setPos((prev) => prev.map((po) => po.id === cancelId ? { ...po, status: "cancelled" } : po));
+          setCancelId(null);
+          toast("Purchase order cancelled");
+        }}
         onCancel={() => setCancelId(null)}
       />
     </div>

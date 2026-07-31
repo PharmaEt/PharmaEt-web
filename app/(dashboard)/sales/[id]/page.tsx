@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
+import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 const mockSales = [
@@ -35,6 +36,12 @@ export default function SaleDetailPage() {
             <p className="mt-0.5 text-sm text-muted-foreground">The requested sale does not exist</p>
           </div>
         </div>
+        <Link
+          href="/sales"
+          className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-neutral-700 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
+        >
+          Go to list
+        </Link>
       </div>
     );
   }
