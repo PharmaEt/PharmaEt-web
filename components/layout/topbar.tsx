@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { ChevronDown, Menu } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 
@@ -21,6 +22,7 @@ const pageTitles: Record<string, string> = {
   "/sales": "Sales History",
   "/reports": "Reports",
   "/settings": "Settings",
+  "/profile": "Profile",
 };
 
 export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
@@ -122,6 +124,21 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
                   <p className="mt-0.5 text-xs text-neutral-500">{user?.email}</p>
                 </div>
                 <div className="p-1">
+                  <Link
+                    href="/profile"
+                    onClick={() => setDropdownOpen(false)}
+                    className="flex w-full items-center rounded-md px-3 py-2 text-[13px] text-neutral-600 transition-colors duration-150 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                  >
+                    Profile
+                  </Link>
+                  <Link
+                    href="/settings"
+                    onClick={() => setDropdownOpen(false)}
+                    className="flex w-full items-center rounded-md px-3 py-2 text-[13px] text-neutral-600 transition-colors duration-150 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                  >
+                    Settings
+                  </Link>
+                  <div className="my-1 border-t border-neutral-200 dark:border-neutral-800" />
                   <button
                     onClick={() => {
                       setDropdownOpen(false);
