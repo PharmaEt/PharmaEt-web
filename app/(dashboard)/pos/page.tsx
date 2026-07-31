@@ -17,6 +17,7 @@ export default function POSPage() {
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [activeCategory, setActiveCategory] = useState("all");
+  const [activeDosageForm, setActiveDosageForm] = useState("all");
   const [discountPercent, setDiscountPercent] = useState(0);
   const [paymentType, setPaymentType] = useState("Cash");
   const [cashGiven, setCashGiven] = useState(0);
@@ -28,6 +29,7 @@ export default function POSPage() {
   const { toast } = useToast();
 
   const categories = ["all", ...mockCategories.map((c) => c.name)];
+  const dosageForms = ["all", "Tablet", "Syrup", "Injection", "Cream", "Ointment", "Drops", "Inhaler"];
 
   const filteredMedicines = mockMedicines.filter((m) => {
     if (m.status !== "active") return false;
@@ -36,7 +38,9 @@ export default function POSPage() {
       m.generic_name.toLowerCase().includes(search.toLowerCase());
     const matchesCategory =
       activeCategory === "all" || m.category?.name === activeCategory;
-    return matchesSearch && matchesCategory;
+    const matchesDosageForm =
+      activeDosageForm === "all" || m.dosage_form === activeDosageForm;
+    return matchesSearch && matchesCategory && matchesDosageForm;
   });
 
   const addToCart = (medicine: typeof mockMedicines[0], unit: "pack" | "single") => {
@@ -123,6 +127,19 @@ export default function POSPage() {
             </div>
           </div>
           <div className="flex gap-2 overflow-x-auto scrollbar-none">
+            {dosageForms.map((df) => (
+              <button
+                key={df}
+                onClick={() => setActiveDosageForm(df)}
+                className={`flex-shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${activeDosageForm === df
+                  ? "bg-neutral-900 text-white dark:bg-white dark:text-black"
+                  : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700"
+                  }`}
+              >
+                {df === "all" ? "All Forms" : df}
+              </button>
+            ))}
+            <span className="flex-shrink-0 self-center text-neutral-300 dark:text-neutral-700">|</span>
             {categories.map((cat) => (
               <button
                 key={cat}
@@ -135,6 +152,8 @@ export default function POSPage() {
                 {cat === "all" ? "All" : cat}
               </button>
             ))}
+
+
           </div>
         </div>
 
