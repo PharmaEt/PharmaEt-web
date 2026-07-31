@@ -1,6 +1,7 @@
 "use client";
 
 import { Printer } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 
 export interface ReceiptItem {
   name: string;
@@ -26,50 +27,6 @@ export interface ReceiptData {
 interface ReceiptProps {
   data: ReceiptData;
   onPrint?: () => void;
-}
-
-function QRCodePlaceholder({ value }: { value: string }) {
-  const size = 120;
-  const modules = 21;
-  const cellSize = size / modules;
-
-  const cells: boolean[][] = [];
-  for (let r = 0; r < modules; r++) {
-    cells[r] = [];
-    for (let c = 0; c < modules; c++) {
-      const inFinder = (r < 7 && c < 7) || (r < 7 && c >= modules - 7) || (r >= modules - 7 && c < 7);
-      const inBorder = inFinder && (r === 0 || r === 6 || c === 0 || c === 6 || c === modules - 7 || c === modules - 1 || r === modules - 7 || r === modules - 1);
-      const inInner = inFinder && r >= 2 && r <= 4 && c >= 2 && c <= 4;
-      const inInner2 = inFinder && r >= modules - 5 && r <= modules - 3 && c >= 2 && c <= 4;
-      const inInner3 = inFinder && r >= 2 && r <= 4 && c >= modules - 5 && c <= modules - 3;
-      if (inBorder || inInner || inInner2 || inInner3) {
-        cells[r][c] = true;
-      } else {
-        const hash = (r * 31 + c * 17 + value.length) % 5;
-        cells[r][c] = hash < 2;
-      }
-    }
-  }
-
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="mx-auto">
-      <rect width={size} height={size} fill="white" />
-      {cells.map((row, r) =>
-        row.map((filled, c) =>
-          filled ? (
-            <rect
-              key={`${r}-${c}`}
-              x={c * cellSize}
-              y={r * cellSize}
-              width={cellSize}
-              height={cellSize}
-              fill="black"
-            />
-          ) : null
-        )
-      )}
-    </svg>
-  );
 }
 
 export function Receipt({ data, onPrint }: ReceiptProps) {
@@ -156,7 +113,7 @@ export function Receipt({ data, onPrint }: ReceiptProps) {
         <div class="divider-thick"></div>
 
         <div class="qr">
-          ${generateQRCodeSVG(`${data.saleId}|${data.date}|${data.total}`)}
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`${data.saleId}|${data.date}|${data.total}|ETB`)}" width="100" height="100" alt="QR Code" />
         </div>
 
         <div class="footer">
@@ -261,7 +218,16 @@ export function Receipt({ data, onPrint }: ReceiptProps) {
 
         {/* QR Code */}
         <div className="my-3 text-center">
-          <QRCodePlaceholder value={`${data.saleId}|${data.date}|${data.total}`} />
+          <div className="mx-auto inline-block">
+            <QRCodeSVG
+              value={`${data.saleId}|${data.date}|${data.total}|ETB`}
+              size={100}
+              bgColor="white"
+              fgColor="black"
+              level="M"
+              includeMargin={false}
+            />
+          </div>
           <p className="mt-1 text-[9px] text-neutral-400">SCAN FOR RECEIPT</p>
         </div>
 
@@ -284,40 +250,4 @@ export function Receipt({ data, onPrint }: ReceiptProps) {
       )}
     </div>
   );
-}
-
-function generateQRCodeSVG(value: string): string {
-  const size = 100;
-  const modules = 15;
-  const cellSize = size / modules;
-
-  const cells: boolean[][] = [];
-  for (let r = 0; r < modules; r++) {
-    cells[r] = [];
-    for (let c = 0; c < modules; c++) {
-      const inFinder = (r < 5 && c < 5) || (r < 5 && c >= modules - 5) || (r >= modules - 5 && c < 5);
-      const inBorder = inFinder && (r === 0 || r === 4 || c === 0 || c === 4 || c === modules - 5 || c === modules - 1 || r === modules - 5 || r === modules - 1);
-      const inInner = inFinder && r >= 1 && r <= 3 && c >= 1 && c <= 3;
-      const inInner2 = inFinder && r >= modules - 4 && r <= modules - 2 && c >= 1 && c <= 3;
-      const inInner3 = inFinder && r >= 1 && r <= 3 && c >= modules - 4 && c <= modules - 2;
-      if (inBorder || inInner || inInner2 || inInner3) {
-        cells[r][c] = true;
-      } else {
-        const hash = (r * 31 + c * 17 + value.length) % 5;
-        cells[r][c] = hash < 2;
-      }
-    }
-  }
-
-  let svg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">`;
-  svg += `<rect width="${size}" height="${size}" fill="white"/>`;
-  for (let r = 0; r < modules; r++) {
-    for (let c = 0; c < modules; c++) {
-      if (cells[r][c]) {
-        svg += `<rect x="${c * cellSize}" y="${r * cellSize}" width="${cellSize}" height="${cellSize}" fill="black"/>`;
-      }
-    }
-  }
-  svg += `</svg>`;
-  return svg;
 }
