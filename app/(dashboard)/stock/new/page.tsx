@@ -3,28 +3,28 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { mockMedicines, mockSuppliers } from "@/lib/mock-data";
+import { mockMedicines, mockSuppliers, mockBranches } from "@/lib/mock-data";
 import { useToast } from "@/components/ui/toast";
+import { useAuth } from "@/context/auth-context";
 
 export default function NewStockAdjustmentPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isOwner = user?.role === "owner";
   const [form, setForm] = useState({
     medicine_id: "",
     supplier_id: "",
+    branch_id: isOwner ? "" : (user?.branch_id?.toString() ?? ""),
     quantity: "",
     batch: "BN-",
     expiry: "",
     purchase_price: "",
     profit_percent: "",
     pack_price: "",
-    single_price: "",
   });
 
   const selectedMedicine = mockMedicines.find((m) => m.id === Number(form.medicine_id));
-  const packSize = selectedMedicine?.pack_size ?? 1;
-  const quantityPacks = parseInt(form.quantity) || 0;
-  const totalUnits = quantityPacks * packSize;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,31 +89,40 @@ export default function NewStockAdjustmentPage() {
               </select>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            {isOwner && (
               <div>
-                <label htmlFor="quantity" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Quantity (Packs)
+                <label htmlFor="branch" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  Branch
                 </label>
-                <input
-                  id="quantity"
-                  type="number"
+                <select
+                  id="branch"
                   required
-                  min="1"
-                  value={form.quantity}
-                  onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-                  placeholder="e.g., 10"
-                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
-                />
+                  value={form.branch_id}
+                  onChange={(e) => setForm({ ...form, branch_id: e.target.value })}
+                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+                >
+                  <option value="" disabled>Select Branch</option>
+                  {mockBranches.map((b) => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
               </div>
+            )}
 
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Total Units
-                </label>
-                <div className="flex h-9 items-center rounded-md border border-neutral-200 bg-neutral-50 px-3 text-sm font-medium dark:border-neutral-800 dark:bg-neutral-900">
-                  {totalUnits}
-                </div>
-              </div>
+            <div>
+              <label htmlFor="quantity" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                Quantity (Packs)
+              </label>
+              <input
+                id="quantity"
+                type="number"
+                required
+                min="1"
+                value={form.quantity}
+                onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+                placeholder="e.g., 10"
+                className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+              />
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -181,40 +190,21 @@ export default function NewStockAdjustmentPage() {
               <p className="text-[10px] text-neutral-400 mt-1">Leave empty for manual pricing</p>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label htmlFor="pack_price" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Selling Price (Per Pack)
-                </label>
-                <input
-                  id="pack_price"
-                  type="number"
-                  required
-                  min="0"
-                  step="0.01"
-                  value={form.pack_price}
-                  onChange={(e) => setForm({ ...form, pack_price: e.target.value })}
-                  placeholder="e.g., 200.00"
-                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="single_price" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Selling Price (Per Unit)
-                </label>
-                <input
-                  id="single_price"
-                  type="number"
-                  required
-                  min="0"
-                  step="0.01"
-                  value={form.single_price}
-                  onChange={(e) => setForm({ ...form, single_price: e.target.value })}
-                  placeholder="e.g., 25.00"
-                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
-                />
-              </div>
+            <div>
+              <label htmlFor="pack_price" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                Selling Price (Per Pack)
+              </label>
+              <input
+                id="pack_price"
+                type="number"
+                required
+                min="0"
+                step="0.01"
+                value={form.pack_price}
+                onChange={(e) => setForm({ ...form, pack_price: e.target.value })}
+                placeholder="e.g., 200.00"
+                className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+              />
             </div>
           </div>
 
