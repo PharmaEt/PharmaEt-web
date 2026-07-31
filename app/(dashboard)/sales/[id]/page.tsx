@@ -2,7 +2,8 @@
 
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Printer } from "lucide-react";
+import { Receipt, type ReceiptData } from "@/components/ui/receipt";
 
 const mockSales = [
   { id: 1, date: "2026-07-28", time: "10:30 AM", cashier: "Omar Ibrahim", payment: "Cash", prescription: false, items: [
@@ -127,6 +128,30 @@ export default function SaleDetailPage() {
             <span>{sale.total.toLocaleString()} ETB</span>
           </div>
         </div>
+      </div>
+
+      {/* Receipt Section */}
+      <div className="rounded-lg border border-border bg-white p-5 dark:bg-[#0A0A0A]">
+        <h2 className="mb-4 text-sm font-medium">Receipt</h2>
+        <Receipt
+          data={{
+            saleId: `SALE-${String(sale.id).padStart(3, "0")}`,
+            date: sale.date,
+            time: sale.time,
+            cashier: sale.cashier,
+            paymentMethod: sale.payment,
+            items: sale.items.map((item) => ({
+              name: item.name,
+              qty: item.qty,
+              price: item.price,
+              total: item.total,
+            })),
+            subtotal: sale.subtotal,
+            discount: sale.discount,
+            tax: sale.tax,
+            total: sale.total,
+          }}
+        />
       </div>
     </div>
   );
