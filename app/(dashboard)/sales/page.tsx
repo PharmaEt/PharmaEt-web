@@ -91,6 +91,7 @@ export default function SalesPage() {
       render: (item: typeof mockSales[0]) => (
         <button
           onClick={() => router.push(`/sales/${item.id}`)}
+          aria-label="View"
           className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
         >
           <Eye className="h-3.5 w-3.5" />

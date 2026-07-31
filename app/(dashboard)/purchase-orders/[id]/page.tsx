@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 const mockPOs = [
@@ -75,17 +76,24 @@ export default function PurchaseOrderDetailPage() {
     return (
       <div className="space-y-4 sm:space-y-6">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.back()}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
+        <button
+          onClick={() => router.back()}
+          aria-label="Go back"
+          className="rounded-md bg-transparent px-4 py-2 text-sm font-medium text-neutral-600 transition-colors duration-150 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+        >
+          Back to Purchase Orders
+        </button>
           <div>
             <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Order Not Found</h1>
             <p className="mt-0.5 text-sm text-muted-foreground">The requested purchase order does not exist</p>
           </div>
         </div>
+        <Link
+          href="/purchase-orders"
+          className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-neutral-700 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
+        >
+          Go to list
+        </Link>
       </div>
     );
   }
@@ -100,6 +108,7 @@ export default function PurchaseOrderDetailPage() {
       <div className="flex items-center gap-3">
         <button
           onClick={() => router.back()}
+          aria-label="Go back"
           className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -201,6 +210,7 @@ export default function PurchaseOrderDetailPage() {
       <div>
         <button
           onClick={() => router.back()}
+          aria-label="Go back"
           className="rounded-md bg-transparent px-4 py-2 text-sm font-medium text-neutral-600 transition-colors duration-150 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
         >
           Back to Purchase Orders

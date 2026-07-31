@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { mockBranches, mockUsers } from "@/lib/mock-data";
 
@@ -24,6 +25,7 @@ export default function BranchDetailPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.back()}
+            aria-label="Go back"
             className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -33,6 +35,12 @@ export default function BranchDetailPage() {
           </div>
         </div>
         <p className="text-sm text-muted-foreground">The branch you are looking for does not exist.</p>
+        <Link
+          href="/branches"
+          className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-neutral-700 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
+        >
+          Go to list
+        </Link>
       </div>
     );
   }
@@ -47,6 +55,7 @@ export default function BranchDetailPage() {
       <div className="flex items-center gap-3">
         <button
           onClick={() => router.back()}
+          aria-label="Go back"
           className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
         >
           <ArrowLeft className="h-4 w-4" />

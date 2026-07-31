@@ -5,19 +5,23 @@ import { useRouter } from "next/navigation";
 import { Search, Eye } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
+import { mockMedicines, mockSuppliers } from "@/lib/mock-data";
 
-const mockStock = [
-  { id: 1, medicine: "Paracetamol 500mg", supplier: "Ethio Pharma Distribution", in_stock: 120, min: 20, batch: "BN-2026A", expiry: "2026-10-01", status: "ok" },
-  { id: 2, medicine: "Amoxicillin 500mg", supplier: "Hawassa Medical Supplies", in_stock: 5, min: 15, batch: "BN-2026B", expiry: "2026-11-01", status: "low" },
-  { id: 3, medicine: "Omeprazole 20mg", supplier: "Ethio Pharma Distribution", in_stock: 2, min: 10, batch: "BN-2025C", expiry: "2026-08-15", status: "low" },
-  { id: 4, medicine: "Cetirizine 10mg", supplier: "Dire Dawa Pharmaceuticals", in_stock: 45, min: 10, batch: "BN-2026D", expiry: "2026-12-01", status: "ok" },
-  { id: 5, medicine: "Amlodipine 5mg", supplier: "Ethio Pharma Distribution", in_stock: 3, min: 12, batch: "BN-2026E", expiry: "2027-01-20", status: "low" },
-  { id: 6, medicine: "Metformin 500mg", supplier: "Hawassa Medical Supplies", in_stock: 80, min: 25, batch: "BN-2026F", expiry: "2027-03-01", status: "ok" },
-  { id: 7, medicine: "Loratadine 10mg", supplier: "Dire Dawa Pharmaceuticals", in_stock: 60, min: 15, batch: "BN-2026G", expiry: "2027-06-01", status: "ok" },
-  { id: 8, medicine: "Ciprofloxacin 500mg", supplier: "Ethio Pharma Distribution", in_stock: 35, min: 20, batch: "BN-2026H", expiry: "2027-02-01", status: "ok" },
-  { id: 9, medicine: "Salbutamol Inhaler", supplier: "Hawassa Medical Supplies", in_stock: 25, min: 10, batch: "BN-2026I", expiry: "2027-04-01", status: "ok" },
-  { id: 10, medicine: "Ibuprofen 400mg", supplier: "Dire Dawa Pharmaceuticals", in_stock: 15, min: 20, batch: "BN-2026J", expiry: "2026-09-15", status: "low" },
+const expiryDates = [
+  "2026-09-15", "2026-10-01", "2026-11-01", "2026-12-01",
+  "2027-01-20", "2027-03-01", "2027-04-01", "2027-06-01",
+  "2027-02-01", "2027-08-15",
 ];
+
+const mockStock = mockMedicines.map((m, i) => ({
+  id: m.id,
+  medicine: `${m.name} ${m.strength}`,
+  supplier: mockSuppliers[i % mockSuppliers.length].name,
+  in_stock: m.current_stock,
+  min: m.min_stock_alert,
+  batch: `BN-${m.id}-2026`,
+  expiry: expiryDates[i % expiryDates.length],
+}));
 
 export default function StockPage() {
   const router = useRouter();
@@ -112,6 +116,7 @@ export default function StockPage() {
       render: (item: typeof mockStock[0]) => (
         <button
           onClick={() => router.push(`/stock/${item.id}`)}
+          aria-label="View"
           className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
         >
           <Eye className="h-3.5 w-3.5" />

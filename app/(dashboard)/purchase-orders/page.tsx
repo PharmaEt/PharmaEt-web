@@ -94,6 +94,7 @@ export default function PurchaseOrdersPage() {
         <div className="flex items-center gap-1">
           <button
             onClick={() => router.push(`/purchase-orders/${item.id}`)}
+            aria-label="View"
             className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
             title="View"
           >
@@ -103,6 +104,7 @@ export default function PurchaseOrdersPage() {
           {item.status === "draft" && (
             <button
               onClick={() => router.push(`/purchase-orders/${item.id}`)}
+              aria-label="Send Order"
               className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950"
               title="Send Order"
             >
@@ -113,6 +115,7 @@ export default function PurchaseOrdersPage() {
           {(item.status === "ordered" || item.status === "partially_received") && (
             <button
               onClick={() => router.push(`/purchase-orders/${item.id}/receive`)}
+              aria-label="Receive"
               className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950"
               title="Delivery Track"
             >
@@ -123,6 +126,7 @@ export default function PurchaseOrdersPage() {
           {item.status !== "received" && item.status !== "cancelled" && (
             <button
               onClick={() => setCancelId(item.id)}
+              aria-label="Cancel"
               className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
               title="Cancel"
             >

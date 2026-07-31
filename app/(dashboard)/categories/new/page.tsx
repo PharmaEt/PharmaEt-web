@@ -25,6 +25,7 @@ export default function NewCategoryPage() {
       <div className="flex items-center gap-3">
         <button
           onClick={() => router.back()}
+          aria-label="Go back"
           className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -73,13 +74,13 @@ export default function NewCategoryPage() {
               <label htmlFor="description" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
                 Description <span className="text-neutral-400">(optional)</span>
               </label>
-              <input
+              <textarea
                 id="description"
-                type="text"
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 placeholder="e.g., Medications for pain management"
-                className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+                rows={3}
+                className="flex w-full rounded-md border border-neutral-200 bg-transparent px-3 py-2 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
               />
             </div>
 
