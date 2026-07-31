@@ -3,7 +3,36 @@
 import { useState } from "react";
 import { Download, Search } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
+import { PageHeader } from "@/components/ui/page-header";
+import { useToast } from "@/components/ui/toast";
 import { mockMedicines, mockCategories } from "@/lib/mock-data";
+
+function exportToCSV(filename: string, data: Record<string, unknown>[]) {
+  if (data.length === 0) return;
+  const headers = Object.keys(data[0]);
+  const csvRows = [
+    headers.join(","),
+    ...data.map((row) =>
+      headers
+        .map((h) => {
+          const val = String(row[h] ?? "");
+          if (val.includes(",") || val.includes('"') || val.includes("\n")) {
+            return `"${val.replace(/"/g, '""')}"`;
+          }
+          return val;
+        })
+        .join(",")
+    ),
+  ];
+  const csvString = csvRows.join("\n");
+  const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
 
 const mockSales = [
   { id: "SALE-001", date: "2026-07-28", time: "10:30 AM", items: 3, subtotal: 450, discount: 0, tax: 67.5, total: 517.5 },
@@ -25,6 +54,7 @@ const mockExpiry = [
 ];
 
 export default function ReportsPage() {
+  const { toast } = useToast();
   const [dateFrom, setDateFrom] = useState("2026-07-01");
   const [dateTo, setDateTo] = useState("2026-07-30");
 
@@ -48,10 +78,7 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Reports</h1>
-        <p className="mt-1 text-sm text-neutral-500">Business analytics and inventory reports</p>
-      </div>
+      <PageHeader title="Reports" subtitle="Business analytics and inventory reports" />
 
       {/* Date range filter */}
       <div className="flex flex-wrap items-center gap-3">
@@ -70,9 +97,6 @@ export default function ReportsPage() {
             className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:bg-[#0A0A0A]"
           />
         </div>
-        <button className="inline-flex h-9 items-center justify-center rounded-md bg-neutral-900 px-4 text-sm font-medium text-white transition-colors hover:bg-neutral-700 dark:bg-white dark:text-black dark:hover:bg-neutral-200">
-          Apply
-        </button>
       </div>
 
       {/* Summary cards */}
@@ -103,7 +127,13 @@ export default function ReportsPage() {
       <div className="rounded-lg border border-border bg-white dark:bg-[#0A0A0A]">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <h2 className="text-sm font-medium uppercase tracking-wide">Sales Report</h2>
-          <button className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-900">
+          <button
+            onClick={() => {
+              exportToCSV("sales-report.csv", filteredSales);
+              toast("CSV exported successfully");
+            }}
+            className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-900"
+          >
             <Download className="h-3.5 w-3.5" />
             CSV
           </button>
@@ -152,7 +182,13 @@ export default function ReportsPage() {
       <div className="rounded-lg border border-border bg-white dark:bg-[#0A0A0A]">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <h2 className="text-sm font-medium uppercase tracking-wide">Expiry Report (Next 180 Days)</h2>
-          <button className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-900">
+          <button
+            onClick={() => {
+              exportToCSV("expiry-report.csv", mockExpiry);
+              toast("CSV exported successfully");
+            }}
+            className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-900"
+          >
             <Download className="h-3.5 w-3.5" />
             CSV
           </button>
@@ -200,7 +236,13 @@ export default function ReportsPage() {
             <h2 className="text-sm font-medium uppercase tracking-wide">Low Stock Report</h2>
             <p className="text-[11px] text-neutral-500 mt-0.5">{inventoryData.length} items below minimum · Estimated value: {inventoryValue.toLocaleString()} ETB</p>
           </div>
-          <button className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-900">
+          <button
+            onClick={() => {
+              exportToCSV("low-stock-report.csv", inventoryData);
+              toast("CSV exported successfully");
+            }}
+            className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-900"
+          >
             <Download className="h-3.5 w-3.5" />
             CSV
           </button>

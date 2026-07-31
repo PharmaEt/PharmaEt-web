@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Search, X, Minus, Plus, ShoppingCart } from "lucide-react";
+import { Search, X, Minus, Plus, ShoppingCart, Check, Printer } from "lucide-react";
 import { mockMedicines, mockCategories } from "@/lib/mock-data";
+import { useToast } from "@/components/ui/toast";
 
 interface CartItem {
   medicine: typeof mockMedicines[0];
@@ -20,7 +21,10 @@ export default function POSPage() {
   const [cashGiven, setCashGiven] = useState(0);
   const [prescriptionImage, setPrescriptionImage] = useState<File | null>(null);
   const [showMobileCart, setShowMobileCart] = useState(false);
+  const [completed, setCompleted] = useState(false);
+  const [lastSaleId, setLastSaleId] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const categories = ["all", ...mockCategories.map((c) => c.name)];
 
@@ -68,6 +72,26 @@ export default function POSPage() {
     setDiscountPercent(0);
     setCashGiven(0);
     setPrescriptionImage(null);
+  };
+
+  const completeSale = () => {
+    if (cart.length === 0) {
+      toast("Cart is empty. Add items before completing a sale.", "error");
+      return;
+    }
+    if (paymentType === "Cash" && cashGiven < total) {
+      toast("Cash given is less than the total.", "error");
+      return;
+    }
+    const id = `SALE-${String(Math.floor(1000 + Math.random() * 9000))}`;
+    setLastSaleId(id);
+    setCompleted(true);
+  };
+
+  const resetSale = () => {
+    clearCart();
+    setCompleted(false);
+    setLastSaleId("");
   };
 
   const subtotal = cart.reduce((sum, item) => sum + item.quantity * item.price, 0);
@@ -208,6 +232,7 @@ export default function POSPage() {
                           const idx = cart.findIndex((i) => i.medicine.id === med.id && i.unit === "pack");
                           if (idx !== -1) updateQuantity(idx, -1);
                         }}
+                        aria-label="Decrease pack quantity"
                         className="flex h-6 w-6 items-center justify-center"
                       >
                         <Minus className="h-2.5 w-2.5" />
@@ -215,6 +240,7 @@ export default function POSPage() {
                       <span className="w-4 text-center text-[11px] font-medium">{inCartPack.quantity}</span>
                       <button
                         onClick={() => addToCart(med, "pack")}
+                        aria-label="Increase pack quantity"
                         className="flex h-6 w-6 items-center justify-center"
                       >
                         <Plus className="h-2.5 w-2.5" />
@@ -236,6 +262,7 @@ export default function POSPage() {
                           const idx = cart.findIndex((i) => i.medicine.id === med.id && i.unit === "single");
                           if (idx !== -1) updateQuantity(idx, -1);
                         }}
+                        aria-label="Decrease single quantity"
                         className="flex h-6 w-6 items-center justify-center"
                       >
                         <Minus className="h-2.5 w-2.5" />
@@ -243,6 +270,7 @@ export default function POSPage() {
                       <span className="w-4 text-center text-[11px] font-medium">{inCartSingle.quantity}</span>
                       <button
                         onClick={() => addToCart(med, "single")}
+                        aria-label="Increase single quantity"
                         className="flex h-6 w-6 items-center justify-center"
                       >
                         <Plus className="h-2.5 w-2.5" />
@@ -299,6 +327,7 @@ export default function POSPage() {
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => updateQuantity(index, -1)}
+                      aria-label="Decrease quantity"
                       className="flex h-6 w-6 items-center justify-center rounded border border-neutral-200 text-neutral-500 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900"
                     >
                       <Minus className="h-3 w-3" />
@@ -306,6 +335,7 @@ export default function POSPage() {
                     <span className="w-5 text-center text-sm font-medium">{item.quantity}</span>
                     <button
                       onClick={() => updateQuantity(index, 1)}
+                      aria-label="Increase quantity"
                       className="flex h-6 w-6 items-center justify-center rounded border border-neutral-200 text-neutral-500 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900"
                     >
                       <Plus className="h-3 w-3" />
@@ -313,6 +343,7 @@ export default function POSPage() {
                   </div>
                   <button
                     onClick={() => removeFromCart(index)}
+                    aria-label="Remove item"
                     className="flex h-6 w-6 items-center justify-center text-neutral-400 hover:text-red-600"
                   >
                     <X className="h-3.5 w-3.5" />
@@ -429,6 +460,7 @@ export default function POSPage() {
             </button>
             <button
               disabled={cart.length === 0}
+              onClick={completeSale}
               className="flex-1 inline-flex h-9 items-center justify-center rounded-md bg-neutral-900 text-sm font-medium text-white transition-colors hover:bg-neutral-700 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
             >
               Complete
@@ -503,6 +535,7 @@ export default function POSPage() {
                       <div className="flex items-center gap-1.5">
                         <button
                           onClick={() => updateQuantity(index, -1)}
+                          aria-label="Decrease quantity"
                           className="flex h-6 w-6 items-center justify-center rounded border border-neutral-200 dark:border-neutral-800"
                         >
                           <Minus className="h-3 w-3" />
@@ -510,6 +543,7 @@ export default function POSPage() {
                         <span className="w-5 text-center text-sm font-medium">{item.quantity}</span>
                         <button
                           onClick={() => updateQuantity(index, 1)}
+                          aria-label="Increase quantity"
                           className="flex h-6 w-6 items-center justify-center rounded border border-neutral-200 dark:border-neutral-800"
                         >
                           <Plus className="h-3 w-3" />
@@ -517,6 +551,7 @@ export default function POSPage() {
                       </div>
                       <button
                         onClick={() => removeFromCart(index)}
+                        aria-label="Remove item"
                         className="flex h-6 w-6 items-center justify-center text-neutral-400 hover:text-red-600"
                       >
                         <X className="h-3.5 w-3.5" />
@@ -632,11 +667,57 @@ export default function POSPage() {
                   Clear
                 </button>
                 <button
+                  disabled={cart.length === 0}
+                  onClick={completeSale}
                   className="flex-1 inline-flex h-9 items-center justify-center rounded-md bg-neutral-900 text-sm font-medium text-white transition-colors hover:bg-neutral-700 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
                 >
                   Complete
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Completion Overlay */}
+      {completed && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
+          <div className="mx-4 w-full max-w-sm rounded-xl bg-white p-8 text-center shadow-2xl dark:bg-[#0A0A0A]">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+              <Check className="h-7 w-7 text-green-600 dark:text-green-400" />
+            </div>
+            <h2 className="text-xl font-semibold">Sale Completed</h2>
+            <p className="mt-1 text-sm text-neutral-500">Transaction recorded successfully</p>
+
+            <div className="mt-6 space-y-2 rounded-lg bg-neutral-50 p-4 text-sm dark:bg-neutral-900">
+              <div className="flex justify-between">
+                <span className="text-neutral-500">Sale ID</span>
+                <span className="font-mono font-medium">{lastSaleId}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-neutral-500">Total</span>
+                <span className="font-medium">{total.toFixed(2)} ETB</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-neutral-500">Payment</span>
+                <span className="font-medium">{paymentType}</span>
+              </div>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => toast("Receipt printing coming soon", "info")}
+                className="flex flex-1 items-center justify-center gap-2 rounded-md border border-neutral-200 px-4 py-2.5 text-sm font-medium transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900"
+              >
+                <Printer className="h-4 w-4" />
+                Print Receipt
+              </button>
+              <button
+                onClick={resetSale}
+                className="flex flex-1 items-center justify-center gap-2 rounded-md bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-neutral-700 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
+              >
+                New Sale
+              </button>
             </div>
           </div>
         </div>

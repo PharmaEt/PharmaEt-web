@@ -8,15 +8,18 @@ import { DataTable } from "@/components/ui/data-table";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { RoleBadge } from "@/components/ui/role-badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useToast } from "@/components/ui/toast";
 import { mockUsers, mockBranches } from "@/lib/mock-data";
 
 export default function UsersPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [users, setUsers] = useState(mockUsers);
 
-  const filteredUsers = mockUsers.filter((user) => {
+  const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.name.toLowerCase().includes(search.toLowerCase()) ||
       user.email.toLowerCase().includes(search.toLowerCase());
@@ -83,18 +86,21 @@ export default function UsersPage() {
         <div className="flex items-center gap-1">
           <button
             onClick={() => router.push(`/users/${item.id}`)}
+            aria-label="View"
             className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
           >
             <Eye className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={() => router.push(`/users/${item.id}`)}
+            aria-label="Edit"
             className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
           >
             <Pencil className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={() => setDeleteId(item.id)}
+            aria-label="Delete"
             className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -143,7 +149,11 @@ export default function UsersPage() {
         open={deleteId !== null}
         title="Delete user?"
         description="This will permanently delete this user and remove all associated data. This cannot be undone."
-        onConfirm={() => setDeleteId(null)}
+        onConfirm={() => {
+          setUsers((prev) => prev.filter((u) => u.id !== deleteId));
+          setDeleteId(null);
+          toast("User deleted successfully");
+        }}
         onCancel={() => setDeleteId(null)}
       />
     </div>

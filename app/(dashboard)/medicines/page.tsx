@@ -6,15 +6,18 @@ import { Plus, Eye, Pencil, Trash2, Search } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useToast } from "@/components/ui/toast";
 import { mockMedicines, mockCategories } from "@/lib/mock-data";
 
 export default function MedicinesPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [medicines, setMedicines] = useState(mockMedicines);
 
-  const filtered = mockMedicines.filter((m) => {
+  const filtered = medicines.filter((m) => {
     const matchesSearch =
       m.name.toLowerCase().includes(search.toLowerCase()) ||
       m.generic_name.toLowerCase().includes(search.toLowerCase());
@@ -90,18 +93,21 @@ export default function MedicinesPage() {
         <div className="flex items-center gap-1">
           <button
             onClick={() => router.push(`/medicines/${item.id}`)}
+            aria-label="View"
             className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
           >
             <Eye className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={() => router.push(`/medicines/${item.id}`)}
+            aria-label="Edit"
             className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
           >
             <Pencil className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={() => setDeleteId(item.id)}
+            aria-label="Delete"
             className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -148,7 +154,11 @@ export default function MedicinesPage() {
         open={deleteId !== null}
         title="Delete medicine?"
         description="This will permanently remove this medicine from inventory."
-        onConfirm={() => setDeleteId(null)}
+        onConfirm={() => {
+          setMedicines((prev) => prev.filter((m) => m.id !== deleteId));
+          setDeleteId(null);
+          toast("Medicine deleted successfully");
+        }}
         onCancel={() => setDeleteId(null)}
       />
     </div>

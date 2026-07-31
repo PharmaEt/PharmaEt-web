@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, CheckCircle } from "lucide-react";
+import { useToast } from "@/components/ui/toast";
 
 const poData = {
   id: "PO-20260612-090743-YHH8",
@@ -62,6 +64,8 @@ const poItems = [
 
 export default function ReceivePage() {
   const router = useRouter();
+  const { toast } = useToast();
+  const [confirmed, setConfirmed] = useState(false);
   const [receiveNow, setReceiveNow] = useState<Record<number, number>>(
     poItems.reduce((acc, item) => ({ ...acc, [item.id]: 0 }), {})
   );
@@ -80,12 +84,44 @@ export default function ReceivePage() {
     setFormData((prev) => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
   };
 
+  const canConfirm = poItems.every((item) => {
+    const remaining = item.ordered - item.receivedTotal;
+    if (remaining <= 0) return true;
+    return receiveNow[item.id] > 0;
+  });
+
+  const handleConfirmReceive = () => {
+    setConfirmed(true);
+    toast("Purchase order received successfully");
+  };
+
+  if (confirmed) {
+    return (
+      <div className="space-y-4 sm:space-y-6">
+        <div className="rounded-lg border border-border p-8 text-center">
+          <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto" />
+          <h2 className="mt-4 text-lg font-semibold">Purchase order received successfully</h2>
+          <p className="mt-2 text-sm text-neutral-500">
+            The inventory has been updated with the received quantities.
+          </p>
+          <Link
+            href="/purchase-orders"
+            className="mt-6 inline-flex h-9 items-center justify-center rounded-md bg-neutral-900 px-4 text-sm font-medium text-white transition-colors hover:bg-neutral-700 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
+          >
+            Back to Purchase Orders
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div>
         <button
           onClick={() => router.back()}
+          aria-label="Go back"
           className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 mb-3"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -216,11 +252,16 @@ export default function ReceivePage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.back()}
+            aria-label="Go back"
             className="inline-flex h-9 items-center justify-center rounded-md border border-neutral-200 px-4 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-900"
           >
             Cancel
           </button>
-          <button className="inline-flex h-9 items-center justify-center rounded-md bg-neutral-900 px-4 text-sm font-medium text-white transition-colors hover:bg-neutral-700 dark:bg-white dark:text-black dark:hover:bg-neutral-200">
+          <button
+            onClick={handleConfirmReceive}
+            disabled={!canConfirm}
+            className="inline-flex h-9 items-center justify-center rounded-md bg-neutral-900 px-4 text-sm font-medium text-white transition-colors hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-white dark:text-black dark:hover:bg-neutral-200"
+          >
             Confirm Receive
           </button>
         </div>

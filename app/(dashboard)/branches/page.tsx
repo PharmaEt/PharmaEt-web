@@ -7,14 +7,17 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatsCard } from "@/components/ui/stats-card";
 import { DataTable } from "@/components/ui/data-table";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useToast } from "@/components/ui/toast";
 import { mockBranches } from "@/lib/mock-data";
 
 export default function BranchesPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [branches, setBranches] = useState(mockBranches);
 
-  const totalStaff = mockBranches.reduce((sum, b) => sum + b.users.length, 0);
-  const totalManagers = mockBranches.reduce(
+  const totalStaff = branches.reduce((sum, b) => sum + b.users.length, 0);
+  const totalManagers = branches.reduce(
     (sum, b) => sum + b.users.filter((u) => u.role === "manager").length,
     0
   );
@@ -91,18 +94,21 @@ export default function BranchesPage() {
         <div className="flex items-center gap-1">
           <button
             onClick={() => router.push(`/branches/${item.id}`)}
+            aria-label="View"
             className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
           >
             <Eye className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={() => router.push(`/branches/${item.id}`)}
+            aria-label="Edit"
             className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
           >
             <Pencil className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={() => setDeleteId(item.id)}
+            aria-label="Delete"
             className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -121,19 +127,23 @@ export default function BranchesPage() {
       />
 
       <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-4">
-        <StatsCard title="Branches" value={mockBranches.length} />
+        <StatsCard title="Branches" value={branches.length} />
         <StatsCard title="Staff" value={totalStaff} />
         <StatsCard title="Managers" value={totalManagers} />
-        <StatsCard title="Active" value={mockBranches.length} />
+        <StatsCard title="Active" value={branches.length} />
       </div>
 
-      <DataTable columns={columns} data={mockBranches} />
+      <DataTable columns={columns} data={branches} emptyMessage="No branches found" />
 
       <ConfirmDialog
         open={deleteId !== null}
         title="Delete branch?"
         description="This will permanently delete this branch and remove all associated data. This cannot be undone."
-        onConfirm={() => setDeleteId(null)}
+        onConfirm={() => {
+          setBranches((prev) => prev.filter((b) => b.id !== deleteId));
+          setDeleteId(null);
+          toast("Branch deleted successfully");
+        }}
         onCancel={() => setDeleteId(null)}
       />
     </div>

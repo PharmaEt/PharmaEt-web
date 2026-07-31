@@ -6,14 +6,17 @@ import { Plus, Eye, Pencil, Trash2, Search } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useToast } from "@/components/ui/toast";
 import { mockCategories, mockMedicines } from "@/lib/mock-data";
 
 export default function CategoriesPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
+  const [categories, setCategories] = useState(mockCategories);
 
-  const filtered = mockCategories.filter(
+  const filtered = categories.filter(
     (c) =>
       c.name.toLowerCase().includes(search.toLowerCase()) ||
       c.slug.toLowerCase().includes(search.toLowerCase())
@@ -59,18 +62,21 @@ export default function CategoriesPage() {
         <div className="flex items-center gap-1">
           <button
             onClick={() => router.push(`/categories/${item.id}`)}
+            aria-label="View"
             className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
           >
             <Eye className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={() => router.push(`/categories/${item.id}`)}
+            aria-label="Edit"
             className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
           >
             <Pencil className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={() => setDeleteId(item.id)}
+            aria-label="Delete"
             className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -105,7 +111,11 @@ export default function CategoriesPage() {
         open={deleteId !== null}
         title="Delete category?"
         description="This will permanently remove this category. Medicines in this category will be affected."
-        onConfirm={() => setDeleteId(null)}
+        onConfirm={() => {
+          setCategories((prev) => prev.filter((c) => c.id !== deleteId));
+          setDeleteId(null);
+          toast("Category deleted successfully");
+        }}
         onCancel={() => setDeleteId(null)}
       />
     </div>
