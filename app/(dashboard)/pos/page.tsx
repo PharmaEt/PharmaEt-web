@@ -179,7 +179,7 @@ export default function POSPage() {
                     <td className="px-4 py-2.5">
                       <p className="text-sm font-medium">{med.name} - {med.strength}</p>
                       <div className="mt-0.5 flex items-center gap-1.5">
-                        <span className="inline-flex items-center rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+                        <span className="inline-flex items-center rounded bg-neutral-100 px-1.5 py-0.5 text-xs font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
                           {med.dosage_form}
                         </span>
                         <span className="text-xs text-neutral-500">{med.generic_name}</span>
@@ -239,19 +239,19 @@ export default function POSPage() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium">{med.name} - {med.strength}</p>
                   <div className="mt-0.5 flex items-center gap-1.5">
-                    <span className="inline-flex items-center rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+                    <span className="inline-flex items-center rounded bg-neutral-100 px-1.5 py-0.5 text-xs font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
                       {med.dosage_form}
                     </span>
                     <span className="text-xs text-neutral-500">{med.generic_name}</span>
                   </div>
                   <div className="mt-1 flex items-center gap-2">
-                    <span className="inline-flex items-center rounded border border-neutral-200 px-1.5 py-0.5 text-[10px] font-medium dark:border-neutral-800">
+                    <span className="inline-flex items-center rounded border border-neutral-200 px-1.5 py-0.5 text-xs font-medium dark:border-neutral-800">
                       {cat?.name ?? "—"}
                     </span>
                     {isLow ? (
-                      <span className="text-[10px] font-medium text-amber-600">Low ({med.current_stock})</span>
+                      <span className="text-xs font-medium text-amber-600">Low ({med.current_stock})</span>
                     ) : (
-                      <span className="text-[10px] text-neutral-400">{med.current_stock}</span>
+                      <span className="text-xs text-neutral-400">{med.current_stock}</span>
                     )}
                   </div>
                 </div>
@@ -264,23 +264,23 @@ export default function POSPage() {
                           if (idx !== -1) updateQuantity(idx, -1);
                         }}
                         aria-label="Decrease pack quantity"
-                        className="flex h-6 w-6 items-center justify-center"
+                        className="flex h-7 w-7 items-center justify-center"
                       >
-                        <Minus className="h-2.5 w-2.5" />
+                        <Minus className="h-3 w-3" />
                       </button>
-                      <span className="w-4 text-center text-[11px] font-medium">{inCartPack.quantity}</span>
+                      <span className="w-5 text-center text-xs font-medium">{inCartPack.quantity}</span>
                       <button
                         onClick={() => addToCart(med, "pack")}
                         aria-label="Increase pack quantity"
-                        className="flex h-6 w-6 items-center justify-center"
+                        className="flex h-7 w-7 items-center justify-center"
                       >
-                        <Plus className="h-2.5 w-2.5" />
+                        <Plus className="h-3 w-3" />
                       </button>
                     </div>
                   ) : (
                     <button
                       onClick={() => addToCart(med, "pack")}
-                      className="inline-flex items-center gap-1 rounded border border-neutral-200 px-2 py-1 text-[10px] font-medium text-neutral-600 hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-900"
+                      className="inline-flex items-center gap-1 rounded border border-neutral-200 px-2.5 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-900"
                     >
                       <span className="text-neutral-400">Pack</span>
                       <span>{med.pack_price.toFixed(0)}</span>
@@ -294,23 +294,23 @@ export default function POSPage() {
                           if (idx !== -1) updateQuantity(idx, -1);
                         }}
                         aria-label="Decrease single quantity"
-                        className="flex h-6 w-6 items-center justify-center"
+                        className="flex h-7 w-7 items-center justify-center"
                       >
-                        <Minus className="h-2.5 w-2.5" />
+                        <Minus className="h-3 w-3" />
                       </button>
-                      <span className="w-4 text-center text-[11px] font-medium">{inCartSingle.quantity}</span>
+                      <span className="w-5 text-center text-xs font-medium">{inCartSingle.quantity}</span>
                       <button
                         onClick={() => addToCart(med, "single")}
                         aria-label="Increase single quantity"
-                        className="flex h-6 w-6 items-center justify-center"
+                        className="flex h-7 w-7 items-center justify-center"
                       >
-                        <Plus className="h-2.5 w-2.5" />
+                        <Plus className="h-3 w-3" />
                       </button>
                     </div>
                   ) : (
                     <button
                       onClick={() => addToCart(med, "single")}
-                      className="inline-flex items-center gap-1 rounded border border-neutral-200 px-2 py-1 text-[10px] font-medium text-neutral-600 hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-900"
+                      className="inline-flex items-center gap-1 rounded border border-neutral-200 px-2.5 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-900"
                     >
                       <span className="text-neutral-400">Unit</span>
                       <span>{med.unit_price.toFixed(0)}</span>
