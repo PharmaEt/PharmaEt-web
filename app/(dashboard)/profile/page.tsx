@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import { useAuth } from "@/context/auth-context";
+import { useToast } from "@/components/ui/toast";
+import { PageHeader } from "@/components/ui/page-header";
 import { mockBranches } from "@/lib/mock-data";
 
 export default function ProfilePage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const userBranch = mockBranches.find((b) => b.id === user?.branch_id);
 
   const [name, setName] = useState(user?.name ?? "");
@@ -16,15 +19,15 @@ export default function ProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const handleProfileSave = () => {
-    alert("Profile updated successfully");
+    toast("Profile updated successfully");
   };
 
   const handlePasswordChange = () => {
     if (newPassword !== confirmPassword) {
-      alert("Passwords do not match");
+      toast("Passwords do not match", "error");
       return;
     }
-    alert("Password changed successfully");
+    toast("Password changed successfully");
     setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword("");
@@ -32,10 +35,7 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-4 sm:space-y-6 max-w-2xl">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Profile</h1>
-        <p className="mt-1 text-sm text-neutral-500">Manage your personal information</p>
-      </div>
+      <PageHeader title="Profile" subtitle="Manage your personal information" />
 
       {/* Profile Info */}
       <div className="rounded-lg border border-border">
@@ -58,6 +58,7 @@ export default function ProfilePage() {
               <label className="block text-xs font-medium text-neutral-500 mb-1.5">Full Name</label>
               <input
                 type="text"
+                required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:bg-[#0A0A0A]"
@@ -67,6 +68,7 @@ export default function ProfilePage() {
               <label className="block text-xs font-medium text-neutral-500 mb-1.5">Email</label>
               <input
                 type="email"
+                required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:bg-[#0A0A0A]"
@@ -109,7 +111,7 @@ export default function ProfilePage() {
           <h2 className="text-sm font-medium">Change Password</h2>
         </div>
         <div className="p-4 sm:p-5 space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4">
             <div>
               <label className="block text-xs font-medium text-neutral-500 mb-1.5">Current Password</label>
               <input
@@ -119,24 +121,25 @@ export default function ProfilePage() {
                 className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:bg-[#0A0A0A]"
               />
             </div>
-            <div></div>
-            <div>
-              <label className="block text-xs font-medium text-neutral-500 mb-1.5">New Password</label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:bg-[#0A0A0A]"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-neutral-500 mb-1.5">Confirm Password</label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:bg-[#0A0A0A]"
-              />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-xs font-medium text-neutral-500 mb-1.5">New Password</label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:bg-[#0A0A0A]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-neutral-500 mb-1.5">Confirm Password</label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:bg-[#0A0A0A]"
+                />
+              </div>
             </div>
           </div>
 

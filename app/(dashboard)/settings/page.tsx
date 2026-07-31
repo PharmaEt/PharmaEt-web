@@ -2,20 +2,20 @@
 
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
+import { useToast } from "@/components/ui/toast";
+import { PageHeader } from "@/components/ui/page-header";
 import { mockBranches } from "@/lib/mock-data";
 
 export default function SettingsPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { toast } = useToast();
 
   const userBranch = mockBranches.find((b) => b.id === user?.branch_id);
 
   return (
     <div className="space-y-4 sm:space-y-6 max-w-2xl">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Settings</h1>
-        <p className="mt-1 text-sm text-neutral-500">Manage your account and preferences</p>
-      </div>
+      <PageHeader title="Settings" subtitle="Manage your account and preferences" />
 
       <div className="rounded-lg border border-border">
         <div className="border-b border-border px-4 sm:px-5 py-3">
@@ -84,7 +84,7 @@ export default function SettingsPage() {
               <p className="text-xs text-neutral-500">{user?.telegram_chat_id ?? "Not configured"}</p>
             </div>
             <button
-              onClick={() => alert("Telegram configuration coming soon")}
+              onClick={() => toast("Telegram configuration coming soon", "info")}
               className="rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-900"
             >
               Configure
