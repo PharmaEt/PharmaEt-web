@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Eye } from "lucide-react";
+import { Search, Eye, Plus } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { mockMedicines, mockSuppliers } from "@/lib/mock-data";
@@ -136,7 +136,11 @@ export default function StockPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <PageHeader title="Stock" subtitle="Current inventory levels" />
+      <PageHeader
+        title="Stock"
+        subtitle="Current inventory levels"
+        action={{ label: "Add Stock", icon: Plus, href: "/stock/new" }}
+      />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1 sm:max-w-xs">
