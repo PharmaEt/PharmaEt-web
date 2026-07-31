@@ -158,7 +158,7 @@ export default function POSPage() {
                   <tr key={med.id} className="border-b border-border last:border-b-0 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors">
                     <td className="px-4 py-2.5">
                       <p className="text-sm font-medium">{med.name} - {med.strength}</p>
-                      <p className="text-xs text-neutral-500">{med.generic_name}</p>
+                      <p className="text-xs text-neutral-500">{med.dosage_form} · {med.generic_name}</p>
                     </td>
                     <td className="px-4 py-2.5">
                       <span className="inline-flex items-center rounded border border-neutral-200 px-2 py-0.5 text-xs font-medium dark:border-neutral-800">
@@ -213,7 +213,7 @@ export default function POSPage() {
               <div key={med.id} className="flex items-center gap-3 px-3 py-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium">{med.name} - {med.strength}</p>
-                  <p className="text-xs text-neutral-500">{med.generic_name}</p>
+                  <p className="text-xs text-neutral-500">{med.dosage_form} · {med.generic_name}</p>
                   <div className="mt-1 flex items-center gap-2">
                     <span className="inline-flex items-center rounded border border-neutral-200 px-1.5 py-0.5 text-[10px] font-medium dark:border-neutral-800">
                       {cat?.name ?? "—"}
@@ -704,7 +704,7 @@ export default function POSPage() {
                   cashier: "Current User",
                   paymentMethod: paymentType,
                   items: cart.map((item) => ({
-                    name: `${item.medicine.name} ${item.medicine.strength}`,
+                    name: `${item.medicine.name} ${item.medicine.strength} ${item.medicine.dosage_form}`,
                     qty: item.quantity,
                     price: item.price,
                     total: item.price * item.quantity,

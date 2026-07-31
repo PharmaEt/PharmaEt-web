@@ -138,15 +138,22 @@ export default function NewMedicinePage() {
                 <label htmlFor="dosage_form" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
                   Dosage Form
                 </label>
-                <input
+                <select
                   id="dosage_form"
-                  type="text"
                   required
                   value={form.dosage_form}
                   onChange={(e) => setForm({ ...form, dosage_form: e.target.value })}
-                  placeholder="e.g., Tablet"
-                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
-                />
+                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+                >
+                  <option value="" disabled>Select dosage form</option>
+                  <option value="Tablet">Tablet</option>
+                  <option value="Syrup">Syrup</option>
+                  <option value="Injection">Injection</option>
+                  <option value="Cream">Cream</option>
+                  <option value="Ointment">Ointment</option>
+                  <option value="Drops">Drops</option>
+                  <option value="Inhaler">Inhaler</option>
+                </select>
               </div>
             </div>
 

@@ -16,6 +16,7 @@ const expiryDates = [
 const mockStock = mockMedicines.map((m, i) => ({
   id: m.id,
   medicine: `${m.name} ${m.strength}`,
+  dosage_form: m.dosage_form,
   supplier: mockSuppliers[i % mockSuppliers.length].name,
   in_stock: m.current_stock,
   min: m.min_stock_alert,
@@ -42,6 +43,14 @@ export default function StockPage() {
       render: (item: typeof mockStock[0]) => (
         <span className="text-sm font-medium">{item.medicine}</span>
       ),
+    },
+    {
+      key: "dosage_form",
+      header: "Dosage Form",
+      render: (item: typeof mockStock[0]) => (
+        <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.dosage_form}</span>
+      ),
+      hideOnMobile: true,
     },
     {
       key: "supplier",
