@@ -150,7 +150,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           </Link>
           <button
             onClick={logout}
-            className="mt-2 flex w-full items-center gap-2 rounded-md px-3 py-1.5 left text-xs text-neutral-500 transition-colors hover:bg-white/5 hover:text-neutral-300"
+            className="mt-2 flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-xs text-neutral-500 transition-colors hover:bg-white/5 hover:text-neutral-300"
           >
             <LogOut className="h-3.5 w-3.5" />
             Sign out

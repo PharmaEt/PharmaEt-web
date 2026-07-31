@@ -4,17 +4,27 @@ import { useState } from "react";
 import { Search } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
+import { mockMedicines, mockSuppliers, mockBranches } from "@/lib/mock-data";
 
-const mockMovements = [
-  { id: 1, medicine: "Paracetamol 500mg", type: "in" as const, quantity: 100, from: "Ethio Pharma Distribution", to: "Bole Branch", date: "2026-07-28", note: "PO-001 delivery" },
-  { id: 2, medicine: "Amoxicillin 500mg", type: "out" as const, quantity: 10, from: "Bole Branch", to: "Sold", date: "2026-07-28", note: "POS sale" },
-  { id: 3, medicine: "Ibuprofen 400mg", type: "in" as const, quantity: 50, from: "Hawassa Medical Supplies", to: "Hawassa Branch", date: "2026-07-27", note: "PO-002 delivery" },
-  { id: 4, medicine: "Metformin 850mg", type: "transfer" as const, quantity: 20, from: "Bole Branch", to: "Hawassa Branch", date: "2026-07-27", note: "Inter-branch transfer" },
-  { id: 5, medicine: "Paracetamol 500mg", type: "out" as const, quantity: 5, from: "Bole Branch", to: "Sold", date: "2026-07-26", note: "POS sale" },
-  { id: 6, medicine: "Omeprazole 20mg", type: "in" as const, quantity: 30, from: "Dire Dawa Pharmaceuticals", to: "Global Stock", date: "2026-07-26", note: "PO-003 delivery" },
-  { id: 7, medicine: "Cetirizine 10mg", type: "out" as const, quantity: 15, from: "Bole Branch", to: "Sold", date: "2026-07-25", note: "POS sale" },
-  { id: 8, medicine: "Amlodipine 5mg", type: "in" as const, quantity: 40, from: "Ethio Pharma Distribution", to: "Bole Branch", date: "2026-07-25", note: "PO-004 delivery" },
-];
+const movementTypes: Array<"in" | "out" | "transfer"> = ["in", "out", "transfer"];
+const movementDates = ["2026-07-28", "2026-07-27", "2026-07-26", "2026-07-25"];
+const movementNotes = ["PO-001 delivery", "POS sale", "PO-002 delivery", "Inter-branch transfer", "PO-003 delivery", "PO-004 delivery"];
+
+const mockMovements = mockMedicines.map((m, i) => {
+  const type = movementTypes[i % movementTypes.length];
+  const supplier = mockSuppliers[i % mockSuppliers.length];
+  const branch = m.branch ?? mockBranches[0];
+  return {
+    id: m.id,
+    medicine: `${m.name} ${m.strength}`,
+    type,
+    quantity: type === "out" ? Math.floor(m.current_stock * 0.05) + 1 : Math.floor(m.current_stock * 0.3) + 10,
+    from: type === "out" ? branch.name : supplier.name,
+    to: type === "out" ? "Sold" : type === "in" ? branch.name : mockBranches.filter((b) => b.id !== branch.id)[0]?.name ?? branch.name,
+    date: movementDates[i % movementDates.length],
+    note: movementNotes[i % movementNotes.length],
+  };
+});
 
 export default function StockMovementsPage() {
   const [search, setSearch] = useState("");

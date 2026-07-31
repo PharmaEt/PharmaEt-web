@@ -125,18 +125,18 @@ export default function DashboardPage() {
                 <span className="text-xs text-neutral-500">Last 7 days</span>
               </div>
               <div className="p-4 sm:p-5">
-                <svg viewBox={`0 0 ${cW} ${cH}`} className="w-full h-auto">
+                <svg viewBox={`0 0 ${cW} ${cH}`} className="w-full h-auto text-neutral-900 dark:text-neutral-100">
                   <defs>
                     <linearGradient id="miniAreaFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#171717" stopOpacity="0.12" />
-                      <stop offset="100%" stopColor="#171717" stopOpacity="0.01" />
+                      <stop offset="0%" stopColor="currentColor" stopOpacity="0.12" />
+                      <stop offset="100%" stopColor="currentColor" stopOpacity="0.01" />
                     </linearGradient>
                   </defs>
                   <path d={area} fill="url(#miniAreaFill)" />
-                  <path d={line} fill="none" stroke="#171717" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d={line} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   {pts.map((p, i) => (
                     <g key={i}>
-                      <circle cx={p.x} cy={p.y} r="2.5" fill="white" stroke="#171717" strokeWidth="1.5" />
+                      <circle cx={p.x} cy={p.y} r="2.5" fill="white" stroke="currentColor" strokeWidth="1.5" />
                       <text x={p.x} y={p.y - 8} textAnchor="middle" className="fill-neutral-700 dark:fill-neutral-300" fontSize="7" fontWeight="500">
                         {salesData[i].value}
                       </text>
