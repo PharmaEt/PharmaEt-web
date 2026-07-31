@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { mockMedicines, mockSuppliers, mockBranches } from "@/lib/mock-data";
+import { mockMedicines, mockSuppliers } from "@/lib/mock-data";
 import { useToast } from "@/components/ui/toast";
 
 export default function NewStockAdjustmentPage() {
@@ -11,19 +11,24 @@ export default function NewStockAdjustmentPage() {
   const { toast } = useToast();
   const [form, setForm] = useState({
     medicine_id: "",
-    type: "stock_in",
-    quantity: "",
-    batch: "",
-    expiry: "",
     supplier_id: "",
-    branch_id: "",
-    reference: "",
-    notes: "",
+    quantity: "",
+    batch: "BN-",
+    expiry: "",
+    purchase_price: "",
+    profit_percent: "",
+    pack_price: "",
+    single_price: "",
   });
+
+  const selectedMedicine = mockMedicines.find((m) => m.id === Number(form.medicine_id));
+  const packSize = selectedMedicine?.pack_size ?? 1;
+  const quantityPacks = parseInt(form.quantity) || 0;
+  const totalUnits = quantityPacks * packSize;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    toast("Stock adjustment saved successfully");
+    toast("Stock added successfully");
     router.push("/stock");
   };
 
@@ -38,8 +43,8 @@ export default function NewStockAdjustmentPage() {
           <ArrowLeft className="h-4 w-4" />
         </button>
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Add Stock</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">Record a manual stock adjustment</p>
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Stock In</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">Add new stock to inventory</p>
         </div>
       </div>
 
@@ -57,7 +62,7 @@ export default function NewStockAdjustmentPage() {
                 onChange={(e) => setForm({ ...form, medicine_id: e.target.value })}
                 className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
               >
-                <option value="" disabled>Select medicine</option>
+                <option value="" disabled>Select</option>
                 {mockMedicines.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.name} {m.strength} ({m.dosage_form})
@@ -66,26 +71,28 @@ export default function NewStockAdjustmentPage() {
               </select>
             </div>
 
+            <div>
+              <label htmlFor="supplier" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                Supplier
+              </label>
+              <select
+                id="supplier"
+                required
+                value={form.supplier_id}
+                onChange={(e) => setForm({ ...form, supplier_id: e.target.value })}
+                className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+              >
+                <option value="" disabled>Select Supplier</option>
+                {mockSuppliers.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label htmlFor="type" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Adjustment Type
-                </label>
-                <select
-                  id="type"
-                  value={form.type}
-                  onChange={(e) => setForm({ ...form, type: e.target.value })}
-                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
-                >
-                  <option value="stock_in">Stock In</option>
-                  <option value="stock_out">Stock Out</option>
-                  <option value="adjustment">Adjustment (Correction)</option>
-                </select>
-              </div>
-
-              <div>
                 <label htmlFor="quantity" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Quantity (Units)
+                  Quantity (Packs)
                 </label>
                 <input
                   id="quantity"
@@ -94,9 +101,18 @@ export default function NewStockAdjustmentPage() {
                   min="1"
                   value={form.quantity}
                   onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-                  placeholder="e.g., 100"
+                  placeholder="e.g., 10"
                   className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
                 />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  Total Units
+                </label>
+                <div className="flex h-9 items-center rounded-md border border-neutral-200 bg-neutral-50 px-3 text-sm font-medium dark:border-neutral-800 dark:bg-neutral-900">
+                  {totalUnits}
+                </div>
               </div>
             </div>
 
@@ -111,8 +127,8 @@ export default function NewStockAdjustmentPage() {
                   required
                   value={form.batch}
                   onChange={(e) => setForm({ ...form, batch: e.target.value })}
-                  placeholder="e.g., BN-2026-001"
-                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+                  placeholder="BN-"
+                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600 font-mono"
                 />
               </div>
 
@@ -131,69 +147,74 @@ export default function NewStockAdjustmentPage() {
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label htmlFor="supplier" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Supplier <span className="text-neutral-400">(optional)</span>
-                </label>
-                <select
-                  id="supplier"
-                  value={form.supplier_id}
-                  onChange={(e) => setForm({ ...form, supplier_id: e.target.value })}
-                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
-                >
-                  <option value="">Select supplier</option>
-                  {mockSuppliers.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="branch" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Branch
-                </label>
-                <select
-                  id="branch"
-                  required
-                  value={form.branch_id}
-                  onChange={(e) => setForm({ ...form, branch_id: e.target.value })}
-                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
-                >
-                  <option value="" disabled>Select branch</option>
-                  {mockBranches.map((b) => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
             <div>
-              <label htmlFor="reference" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                Reference <span className="text-neutral-400">(optional)</span>
+              <label htmlFor="purchase_price" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                Purchase Cost (Per Pack)
               </label>
               <input
-                id="reference"
-                type="text"
-                value={form.reference}
-                onChange={(e) => setForm({ ...form, reference: e.target.value })}
-                placeholder="e.g., PO-001, Invoice #123"
+                id="purchase_price"
+                type="number"
+                required
+                min="0"
+                step="0.01"
+                value={form.purchase_price}
+                onChange={(e) => setForm({ ...form, purchase_price: e.target.value })}
+                placeholder="e.g., 150.00"
                 className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
               />
             </div>
 
             <div>
-              <label htmlFor="notes" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                Notes <span className="text-neutral-400">(optional)</span>
+              <label htmlFor="profit_percent" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                Profit % <span className="text-neutral-400">(Optional)</span>
               </label>
-              <textarea
-                id="notes"
-                rows={3}
-                value={form.notes}
-                onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                placeholder="Reason for adjustment..."
-                className="flex w-full rounded-md border border-neutral-200 bg-transparent px-3 py-2 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+              <input
+                id="profit_percent"
+                type="number"
+                min="0"
+                max="100"
+                value={form.profit_percent}
+                onChange={(e) => setForm({ ...form, profit_percent: e.target.value })}
+                placeholder="Leave empty for manual pricing"
+                className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
               />
+              <p className="text-[10px] text-neutral-400 mt-1">Leave empty for manual pricing</p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="pack_price" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  Selling Price (Per Pack)
+                </label>
+                <input
+                  id="pack_price"
+                  type="number"
+                  required
+                  min="0"
+                  step="0.01"
+                  value={form.pack_price}
+                  onChange={(e) => setForm({ ...form, pack_price: e.target.value })}
+                  placeholder="e.g., 200.00"
+                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="single_price" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  Selling Price (Per Unit)
+                </label>
+                <input
+                  id="single_price"
+                  type="number"
+                  required
+                  min="0"
+                  step="0.01"
+                  value={form.single_price}
+                  onChange={(e) => setForm({ ...form, single_price: e.target.value })}
+                  placeholder="e.g., 25.00"
+                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+                />
+              </div>
             </div>
           </div>
 
@@ -202,7 +223,7 @@ export default function NewStockAdjustmentPage() {
               type="submit"
               className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-neutral-700 active:scale-[0.98] dark:bg-white dark:text-black dark:hover:bg-neutral-200"
             >
-              Save Adjustment
+              Add Stock
             </button>
             <button
               type="button"
