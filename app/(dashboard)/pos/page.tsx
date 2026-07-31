@@ -126,34 +126,35 @@ export default function POSPage() {
               />
             </div>
           </div>
-          <div className="flex gap-2 overflow-x-auto scrollbar-none">
-            {dosageForms.map((df) => (
-              <button
-                key={df}
-                onClick={() => setActiveDosageForm(df)}
-                className={`flex-shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${activeDosageForm === df
-                  ? "bg-neutral-900 text-white dark:bg-white dark:text-black"
-                  : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700"
-                  }`}
-              >
-                {df === "all" ? "All Forms" : df}
-              </button>
-            ))}
-            <span className="flex-shrink-0 self-center text-neutral-300 dark:text-neutral-700">|</span>
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`flex-shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${activeCategory === cat
-                  ? "bg-neutral-900 text-white dark:bg-white dark:text-black"
-                  : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700"
-                  }`}
-              >
-                {cat === "all" ? "All" : cat}
-              </button>
-            ))}
-
-
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2 overflow-x-auto scrollbar-none">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`flex-shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${activeCategory === cat
+                    ? "bg-neutral-900 text-white dark:bg-white dark:text-black"
+                    : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700"
+                    }`}
+                >
+                  {cat === "all" ? "All" : cat}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2 overflow-x-auto scrollbar-none">
+              {dosageForms.map((df) => (
+                <button
+                  key={df}
+                  onClick={() => setActiveDosageForm(df)}
+                  className={`flex-shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${activeDosageForm === df
+                    ? "bg-neutral-900 text-white dark:bg-white dark:text-black"
+                    : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700"
+                    }`}
+                >
+                  {df === "all" ? "All Forms" : df}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
