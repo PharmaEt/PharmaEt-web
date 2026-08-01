@@ -111,6 +111,8 @@ export interface ApiPosProduct {
   type: "Medicine" | "Cosmetic";
   available_quantity: number;
   selling_price: string;
+  fefo_stock_id?: number | null;
+  earliest_expiry_date?: string | null;
   details: {
     generic_name?: string;
     strength?: string;
@@ -120,6 +122,37 @@ export interface ApiPosProduct {
     size?: string | null;
     sku?: string;
   };
+}
+
+export interface ApiStockTransferItem {
+  id: number;
+  stock_transfer_id: number;
+  product_id: number;
+  stock_id?: number | null;
+  requested_quantity: number;
+  sent_quantity: number;
+  received_quantity: number;
+  product?: ApiMedicine | ApiCosmetic;
+}
+
+export interface ApiStockTransfer {
+  id: number;
+  transfer_number: string;
+  from_branch_id: number;
+  to_branch_id: number;
+  requested_by: number;
+  approved_by?: number | null;
+  status: "requested" | "approved" | "dispatched" | "received" | "rejected";
+  notes?: string | null;
+  dispatched_at?: string | null;
+  received_at?: string | null;
+  from_branch?: ApiBranch;
+  to_branch?: ApiBranch;
+  requested_by_user?: ApiUser;
+  approved_by_user?: ApiUser;
+  items: ApiStockTransferItem[];
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ApiStock {
@@ -552,6 +585,21 @@ export const mockDashboardSales = [
   { id: 8, time: "02:45 PM", items: 2, total: 290, payment: "CBE Birr", served_by: "Omar Ibrahim", status: "completed" },
   { id: 9, time: "03:30 PM", items: 3, total: 520, payment: "Cash", served_by: "Daniel Kebede", status: "pending" },
   { id: 10, time: "04:00 PM", items: 1, total: 150, payment: "Telebirr", served_by: "Omar Ibrahim", status: "completed" },
+];
+
+// ─── Mock Stock Movements (matches GET /stock-movements) ──
+
+export const mockStockMovements: ApiStockMovement[] = [
+  { id: 1, stock_id: 1, product_id: 1, type: "purchase", quantity: 200, notes: "PO-001 delivery", user: mockUsers.find((u) => u.id === 5)!, product: mockMedicines[0], stock: mockStock[0], created_at: "2026-07-28T09:00:00.000000Z", updated_at: "2026-07-28T09:00:00.000000Z" },
+  { id: 2, stock_id: 1, product_id: 1, type: "sale", quantity: 15, notes: "POS sale SALE-042", user: mockUsers.find((u) => u.id === 4)!, product: mockMedicines[0], stock: mockStock[0], created_at: "2026-07-28T10:30:00.000000Z", updated_at: "2026-07-28T10:30:00.000000Z" },
+  { id: 3, stock_id: 2, product_id: 2, type: "purchase", quantity: 100, notes: "PO-001 delivery", user: mockUsers.find((u) => u.id === 5)!, product: mockMedicines[1], stock: mockStock[1], created_at: "2026-07-28T09:00:00.000000Z", updated_at: "2026-07-28T09:00:00.000000Z" },
+  { id: 4, stock_id: 2, product_id: 2, type: "sale", quantity: 10, notes: "POS sale SALE-039", user: mockUsers.find((u) => u.id === 8)!, product: mockMedicines[1], stock: mockStock[1], created_at: "2026-07-27T14:00:00.000000Z", updated_at: "2026-07-27T14:00:00.000000Z" },
+  { id: 5, stock_id: 3, product_id: 3, type: "purchase", quantity: 50, notes: "PO-002 restock", user: mockUsers.find((u) => u.id === 5)!, product: mockMedicines[2], stock: mockStock[2], created_at: "2026-07-27T08:30:00.000000Z", updated_at: "2026-07-27T08:30:00.000000Z" },
+  { id: 6, stock_id: 1, product_id: 1, type: "sale", quantity: 8, notes: "POS sale SALE-035", user: mockUsers.find((u) => u.id === 4)!, product: mockMedicines[0], stock: mockStock[0], created_at: "2026-07-26T15:00:00.000000Z", updated_at: "2026-07-26T15:00:00.000000Z" },
+  { id: 7, stock_id: 4, product_id: 9, type: "transfer_in", quantity: 30, notes: "Transfer from Bole Branch", user: mockUsers.find((u) => u.id === 6)!, product: mockMedicines[8], stock: mockStock[3], created_at: "2026-07-26T11:00:00.000000Z", updated_at: "2026-07-26T11:00:00.000000Z" },
+  { id: 8, stock_id: 5, product_id: 101, type: "purchase", quantity: 120, notes: "PO-003 delivery", user: mockUsers.find((u) => u.id === 5)!, product: mockCosmetics[0], stock: mockStock[4], created_at: "2026-07-25T10:00:00.000000Z", updated_at: "2026-07-25T10:00:00.000000Z" },
+  { id: 9, stock_id: 1, product_id: 1, type: "return", quantity: 5, notes: "Customer return - damaged packaging", user: mockUsers.find((u) => u.id === 4)!, product: mockMedicines[0], stock: mockStock[0], created_at: "2026-07-25T14:30:00.000000Z", updated_at: "2026-07-25T14:30:00.000000Z" },
+  { id: 10, stock_id: 3, product_id: 3, type: "adjustment", quantity: -3, notes: "Inventory count correction", user: mockUsers.find((u) => u.id === 5)!, product: mockMedicines[2], stock: mockStock[2], created_at: "2026-07-25T16:00:00.000000Z", updated_at: "2026-07-25T16:00:00.000000Z" },
 ];
 
 // ─── Legacy mockAlerts (flat format for dashboard) ─────

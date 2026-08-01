@@ -3,18 +3,15 @@
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Printer } from "lucide-react";
-import { Receipt, type ReceiptData } from "@/components/ui/receipt";
+import { Receipt } from "@/components/ui/receipt";
+import { mockSales } from "@/lib/mock-data";
+import type { ApiSale } from "@/lib/mock-data";
 
-const mockSales = [
-  { id: 1, date: "2026-07-28", time: "10:30 AM", cashier: "Omar Ibrahim", payment: "Cash", prescription: false, items: [
-    { name: "Paracetamol 500mg Tablet", qty: 2, price: 45, total: 90, unit: "pack" as const },
-    { name: "Amoxicillin 250mg Capsule", qty: 1, price: 120, total: 120, unit: "single" as const },
-    { name: "Cetirizine 10mg Tablet", qty: 1, price: 35, total: 35, unit: "pack" as const },
-  ], subtotal: 245, discount: 0, tax: 36.75, total: 281.75 },
-  { id: 2, date: "2026-07-28", time: "11:15 AM", cashier: "Omar Ibrahim", payment: "Telebirr", prescription: true, items: [
-    { name: "Metformin 500mg Tablet", qty: 1, price: 120, total: 120, unit: "single" as const },
-  ], subtotal: 120, discount: 10, tax: 16.5, total: 126.5 },
-];
+function getProductName(item: ApiSale["items"][0]): string {
+  const p = item.product;
+  if ("strength" in p && p.strength) return `${p.name} ${p.strength} ${("dosage_form" in p) ? p.dosage_form : ""}`;
+  return p.name;
+}
 
 export default function SaleDetailPage() {
   const router = useRouter();
@@ -47,6 +44,15 @@ export default function SaleDetailPage() {
     );
   }
 
+  const subtotal = parseFloat(sale.subtotal);
+  const discount = parseFloat(sale.discount);
+  const tax = parseFloat(sale.tax);
+  const total = parseFloat(sale.total);
+  const saleDate = new Date(sale.created_at);
+  const dateStr = saleDate.toLocaleDateString();
+  const timeStr = saleDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const paymentLabel = sale.payment_type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="flex items-center gap-3">
@@ -62,23 +68,23 @@ export default function SaleDetailPage() {
             SALE-{String(sale.id).padStart(3, "0")}
           </h1>
           <p className="mt-0.5 text-sm text-neutral-500">
-            {sale.date} at {sale.time}
+            {dateStr} at {timeStr}
           </p>
         </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-lg border border-border bg-white p-4 dark:bg-[#0A0A0A]">
-          <p className="text-xs text-neutral-500">Cashier</p>
-          <p className="mt-1 text-sm font-medium">{sale.cashier}</p>
+          <p className="text-xs text-neutral-500">Served By</p>
+          <p className="mt-1 text-sm font-medium">{sale.served_by.name}</p>
         </div>
         <div className="rounded-lg border border-border bg-white p-4 dark:bg-[#0A0A0A]">
           <p className="text-xs text-neutral-500">Payment</p>
-          <p className="mt-1 text-sm font-medium">{sale.payment}</p>
+          <p className="mt-1 text-sm font-medium">{paymentLabel}</p>
         </div>
         <div className="rounded-lg border border-border bg-white p-4 dark:bg-[#0A0A0A]">
-          <p className="text-xs text-neutral-500">Prescription</p>
-          <p className="mt-1 text-sm font-medium">{sale.prescription ? "Required" : "Not required"}</p>
+          <p className="text-xs text-neutral-500">Items</p>
+          <p className="mt-1 text-sm font-medium">{sale.items.length} products</p>
         </div>
       </div>
 
@@ -90,19 +96,19 @@ export default function SaleDetailPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-border text-left">
-                <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500">Medicine</th>
+                <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500">Product</th>
                 <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 text-right">Qty</th>
                 <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 text-right">Price</th>
                 <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 text-right">Total</th>
               </tr>
             </thead>
             <tbody>
-              {sale.items.map((item, idx) => (
-                <tr key={idx} className="border-b border-border last:border-b-0">
-                  <td className="px-4 py-2.5 text-sm font-medium">{item.name}</td>
-                  <td className="px-4 py-2.5 text-sm text-right text-neutral-600 dark:text-neutral-400">{item.qty}</td>
-                  <td className="px-4 py-2.5 text-sm text-right text-neutral-600 dark:text-neutral-400">{item.price.toLocaleString()} ETB</td>
-                  <td className="px-4 py-2.5 text-sm text-right font-medium">{item.total.toLocaleString()} ETB</td>
+              {sale.items.map((item) => (
+                <tr key={item.id} className="border-b border-border last:border-b-0">
+                  <td className="px-4 py-2.5 text-sm font-medium">{getProductName(item)}</td>
+                  <td className="px-4 py-2.5 text-sm text-right text-neutral-600 dark:text-neutral-400">{item.quantity}</td>
+                  <td className="px-4 py-2.5 text-sm text-right text-neutral-600 dark:text-neutral-400">{parseFloat(item.selling_price).toLocaleString()} ETB</td>
+                  <td className="px-4 py-2.5 text-sm text-right font-medium">{parseFloat(item.total).toLocaleString()} ETB</td>
                 </tr>
               ))}
             </tbody>
@@ -111,21 +117,21 @@ export default function SaleDetailPage() {
         <div className="border-t border-border px-4 py-3">
           <div className="flex items-center justify-between text-sm">
             <span className="text-neutral-500">Subtotal</span>
-            <span>{sale.subtotal.toLocaleString()} ETB</span>
+            <span>{subtotal.toLocaleString()} ETB</span>
           </div>
-          {sale.discount > 0 && (
+          {discount > 0 && (
             <div className="flex items-center justify-between text-sm">
               <span className="text-neutral-500">Discount</span>
-              <span className="text-red-600 dark:text-red-400">-{sale.discount.toLocaleString()} ETB</span>
+              <span className="text-red-600 dark:text-red-400">-{discount.toLocaleString()} ETB</span>
             </div>
           )}
           <div className="flex items-center justify-between text-sm">
-            <span className="text-neutral-500">Tax (15%)</span>
-            <span>{sale.tax.toLocaleString()} ETB</span>
+            <span className="text-neutral-500">Tax</span>
+            <span>{tax.toLocaleString()} ETB</span>
           </div>
           <div className="mt-2 flex items-center justify-between border-t border-border pt-2 text-sm font-semibold">
             <span>Total</span>
-            <span>{sale.total.toLocaleString()} ETB</span>
+            <span>{total.toLocaleString()} ETB</span>
           </div>
         </div>
       </div>
@@ -145,23 +151,25 @@ export default function SaleDetailPage() {
         <Receipt
           data={{
             saleId: `SALE-${String(sale.id).padStart(3, "0")}`,
-            date: sale.date,
-            time: sale.time,
-            cashier: sale.cashier,
-            paymentMethod: sale.payment,
+            date: dateStr,
+            time: timeStr,
+            cashier: sale.served_by.name,
+            paymentMethod: paymentLabel,
             items: sale.items.map((item) => ({
-              name: item.name,
-              qty: item.qty,
-              price: item.price,
-              total: item.total,
+              name: getProductName(item),
+              qty: item.quantity,
+              price: parseFloat(item.selling_price),
+              total: parseFloat(item.total),
             })),
-            subtotal: sale.subtotal,
-            discount: sale.discount,
-            tax: sale.tax,
-            total: sale.total,
+            subtotal,
+            discount,
+            tax,
+            total,
           }}
         />
       </div>
     </div>
   );
 }
+
+

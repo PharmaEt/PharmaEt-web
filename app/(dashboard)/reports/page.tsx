@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Download, Search } from "lucide-react";
-import { DataTable } from "@/components/ui/data-table";
+import { Download } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { useToast } from "@/components/ui/toast";
-import { mockMedicines, mockCategories } from "@/lib/mock-data";
+import { mockSales, mockStock, mockMedicines, mockCategories } from "@/lib/mock-data";
+import type { ApiSale, ApiStock } from "@/lib/mock-data";
 
 function exportToCSV(filename: string, data: Record<string, unknown>[]) {
   if (data.length === 0) return;
@@ -34,38 +34,40 @@ function exportToCSV(filename: string, data: Record<string, unknown>[]) {
   URL.revokeObjectURL(url);
 }
 
-const mockSales = [
-  { id: "SALE-001", date: "2026-07-28", time: "10:30 AM", items: 3, subtotal: 450, discount: 0, tax: 67.5, total: 517.5 },
-  { id: "SALE-002", date: "2026-07-28", time: "11:15 AM", items: 1, subtotal: 120, discount: 10, tax: 16.5, total: 126.5 },
-  { id: "SALE-003", date: "2026-07-28", time: "11:45 AM", items: 5, subtotal: 890, discount: 0, tax: 133.5, total: 1023.5 },
-  { id: "SALE-004", date: "2026-07-27", time: "12:20 PM", items: 2, subtotal: 340, discount: 20, tax: 48, total: 368 },
-  { id: "SALE-005", date: "2026-07-27", time: "01:00 PM", items: 4, subtotal: 670, discount: 0, tax: 100.5, total: 770.5 },
-  { id: "SALE-006", date: "2026-07-26", time: "01:30 PM", items: 1, subtotal: 85, discount: 0, tax: 12.75, total: 97.75 },
-  { id: "SALE-007", date: "2026-07-26", time: "02:15 PM", items: 6, subtotal: 1200, discount: 50, tax: 172.5, total: 1322.5 },
-  { id: "SALE-008", date: "2026-07-25", time: "02:45 PM", items: 2, subtotal: 290, discount: 0, tax: 43.5, total: 333.5 },
-];
-
-const mockExpiry = [
-  { medicine: "Paracetamol", batch: "BN-2026A", expiry: "2026-10-01", qty: 49, daysLeft: 63 },
-  { medicine: "Amoxicillin", batch: "BN-2026B", expiry: "2026-11-01", qty: 50, daysLeft: 94 },
-  { medicine: "Omeprazole", batch: "BN-2025C", expiry: "2026-08-15", qty: 30, daysLeft: 17 },
-  { medicine: "Cetirizine", batch: "BN-2026D", expiry: "2026-12-01", qty: 25, daysLeft: 124 },
-  { medicine: "Amlodipine", batch: "BN-2026E", expiry: "2027-01-20", qty: 20, daysLeft: 174 },
-];
+function getStockProductName(stock: ApiStock): string {
+  const p = stock.product;
+  if ("strength" in p && p.strength) return `${p.name} ${p.strength}`;
+  return p.name;
+}
 
 export default function ReportsPage() {
   const { toast } = useToast();
   const [dateFrom, setDateFrom] = useState("2026-07-01");
   const [dateTo, setDateTo] = useState("2026-07-30");
 
-  const filteredSales = mockSales.filter((s) => s.date >= dateFrom && s.date <= dateTo);
+  // Sales report — filter by date from ApiSale
+  const filteredSales = mockSales.filter((s) => {
+    const saleDate = s.created_at.slice(0, 10);
+    return saleDate >= dateFrom && saleDate <= dateTo;
+  });
 
   const totalCount = filteredSales.length;
-  const totalSubtotal = filteredSales.reduce((s, sale) => s + sale.subtotal, 0);
-  const totalDiscount = filteredSales.reduce((s, sale) => s + sale.discount, 0);
-  const totalTax = filteredSales.reduce((s, sale) => s + sale.tax, 0);
-  const totalTotal = filteredSales.reduce((s, sale) => s + sale.total, 0);
+  const totalSubtotal = filteredSales.reduce((s, sale) => s + parseFloat(sale.subtotal), 0);
+  const totalDiscount = filteredSales.reduce((s, sale) => s + parseFloat(sale.discount), 0);
+  const totalTax = filteredSales.reduce((s, sale) => s + parseFloat(sale.tax), 0);
+  const totalTotal = filteredSales.reduce((s, sale) => s + parseFloat(sale.total), 0);
 
+  // Expiry report — from mockStock with expiry dates
+  const expiryData = mockStock
+    .filter((s) => s.expiry_date !== null)
+    .map((s) => {
+      const daysLeft = Math.ceil((new Date(s.expiry_date!).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      return { ...s, daysLeft, productName: getStockProductName(s) };
+    })
+    .filter((s) => s.daysLeft <= 365)
+    .sort((a, b) => a.daysLeft - b.daysLeft);
+
+  // Low stock report — from mockMedicines
   const inventoryData = mockMedicines
     .filter((m) => m.current_stock <= m.min_stock_alert)
     .map((m) => {
@@ -129,7 +131,17 @@ export default function ReportsPage() {
           <h2 className="text-sm font-medium uppercase tracking-wide">Sales Report</h2>
           <button
             onClick={() => {
-              exportToCSV("sales-report.csv", filteredSales);
+              exportToCSV("sales-report.csv", filteredSales.map((s) => ({
+                id: `SALE-${String(s.id).padStart(3, "0")}`,
+                date: s.created_at.slice(0, 10),
+                served_by: s.served_by.name,
+                payment: s.payment_type,
+                items: s.items.length,
+                subtotal: s.subtotal,
+                discount: s.discount,
+                tax: s.tax,
+                total: s.total,
+              })));
               toast("CSV exported successfully");
             }}
             className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-900"
@@ -144,7 +156,7 @@ export default function ReportsPage() {
               <tr className="border-b border-border text-left">
                 <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500">Sale ID</th>
                 <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500">Date</th>
-                <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500">Time</th>
+                <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500">Served By</th>
                 <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 text-right">Items</th>
                 <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 text-right">Subtotal</th>
                 <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 text-right">Discount</th>
@@ -162,14 +174,14 @@ export default function ReportsPage() {
               ) : (
                 filteredSales.map((sale) => (
                   <tr key={sale.id} className="border-b border-border last:border-b-0 hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
-                    <td className="px-4 py-2.5 text-sm font-medium">{sale.id}</td>
-                    <td className="px-4 py-2.5 text-sm text-neutral-600 dark:text-neutral-400">{sale.date}</td>
-                    <td className="px-4 py-2.5 text-sm text-neutral-600 dark:text-neutral-400">{sale.time}</td>
-                    <td className="px-4 py-2.5 text-sm text-right text-neutral-600 dark:text-neutral-400">{sale.items}</td>
-                    <td className="px-4 py-2.5 text-sm text-right">{sale.subtotal.toFixed(2)}</td>
-                    <td className="px-4 py-2.5 text-sm text-right text-red-600 dark:text-red-400">{sale.discount > 0 ? sale.discount.toFixed(2) : "—"}</td>
-                    <td className="px-4 py-2.5 text-sm text-right">{sale.tax.toFixed(2)}</td>
-                    <td className="px-4 py-2.5 text-sm text-right font-medium">{sale.total.toFixed(2)}</td>
+                    <td className="px-4 py-2.5 text-sm font-medium">SALE-{String(sale.id).padStart(3, "0")}</td>
+                    <td className="px-4 py-2.5 text-sm text-neutral-600 dark:text-neutral-400">{sale.created_at.slice(0, 10)}</td>
+                    <td className="px-4 py-2.5 text-sm text-neutral-600 dark:text-neutral-400">{sale.served_by.name}</td>
+                    <td className="px-4 py-2.5 text-sm text-right text-neutral-600 dark:text-neutral-400">{sale.items.length}</td>
+                    <td className="px-4 py-2.5 text-sm text-right">{parseFloat(sale.subtotal).toFixed(2)}</td>
+                    <td className="px-4 py-2.5 text-sm text-right text-red-600 dark:text-red-400">{parseFloat(sale.discount) > 0 ? parseFloat(sale.discount).toFixed(2) : "—"}</td>
+                    <td className="px-4 py-2.5 text-sm text-right">{parseFloat(sale.tax).toFixed(2)}</td>
+                    <td className="px-4 py-2.5 text-sm text-right font-medium">{parseFloat(sale.total).toFixed(2)}</td>
                   </tr>
                 ))
               )}
@@ -181,10 +193,16 @@ export default function ReportsPage() {
       {/* Expiry Report */}
       <div className="rounded-lg border border-border bg-white dark:bg-[#0A0A0A]">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <h2 className="text-sm font-medium uppercase tracking-wide">Expiry Report (Next 180 Days)</h2>
+          <h2 className="text-sm font-medium uppercase tracking-wide">Expiry Report</h2>
           <button
             onClick={() => {
-              exportToCSV("expiry-report.csv", mockExpiry);
+              exportToCSV("expiry-report.csv", expiryData.map((s) => ({
+                product: s.productName,
+                batch: s.batch_number ?? "",
+                expiry: s.expiry_date ?? "",
+                quantity: s.quantity,
+                days_left: s.daysLeft,
+              })));
               toast("CSV exported successfully");
             }}
             className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-900"
@@ -197,7 +215,7 @@ export default function ReportsPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-border text-left">
-                <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500">Medicine</th>
+                <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500">Product</th>
                 <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500">Batch</th>
                 <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500">Expiry</th>
                 <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 text-right">Qty</th>
@@ -205,12 +223,12 @@ export default function ReportsPage() {
               </tr>
             </thead>
             <tbody>
-              {mockExpiry.map((item, index) => (
-                <tr key={index} className="border-b border-border last:border-b-0 hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
-                  <td className="px-4 py-2.5 text-sm font-medium">{item.medicine}</td>
-                  <td className="px-4 py-2.5 text-sm text-neutral-500 font-mono">{item.batch}</td>
-                  <td className="px-4 py-2.5 text-sm text-neutral-600 dark:text-neutral-400">{item.expiry}</td>
-                  <td className="px-4 py-2.5 text-sm text-right">{item.qty}</td>
+              {expiryData.map((item) => (
+                <tr key={item.id} className="border-b border-border last:border-b-0 hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
+                  <td className="px-4 py-2.5 text-sm font-medium">{item.productName}</td>
+                  <td className="px-4 py-2.5 text-sm text-neutral-500 font-mono">{item.batch_number ?? "—"}</td>
+                  <td className="px-4 py-2.5 text-sm text-neutral-600 dark:text-neutral-400">{item.expiry_date}</td>
+                  <td className="px-4 py-2.5 text-sm text-right">{item.quantity}</td>
                   <td className="px-4 py-2.5 text-sm text-right">
                     <span className={`font-medium ${
                       item.daysLeft <= 30
@@ -229,7 +247,7 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* Inventory Report */}
+      {/* Low Stock Report */}
       <div className="rounded-lg border border-border bg-white dark:bg-[#0A0A0A]">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <div>
@@ -238,7 +256,14 @@ export default function ReportsPage() {
           </div>
           <button
             onClick={() => {
-              exportToCSV("low-stock-report.csv", inventoryData);
+              exportToCSV("low-stock-report.csv", inventoryData.map((m) => ({
+                medicine: m.name,
+                strength: m.strength,
+                category: m.categoryName,
+                in_stock: m.current_stock,
+                min_alert: m.min_stock_alert,
+                est_value: m.estValue,
+              })));
               toast("CSV exported successfully");
             }}
             className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-900"

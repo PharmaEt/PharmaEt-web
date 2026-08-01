@@ -3,23 +3,28 @@
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { mockMedicines, mockBranches } from "@/lib/mock-data";
+import { mockStock } from "@/lib/mock-data";
+import type { ApiStock } from "@/lib/mock-data";
 
-const mockStockHistory = [
-  { id: 1, date: "2026-07-28", type: "in", quantity: 200, reference: "PO-001", notes: "Initial stock received" },
-  { id: 2, date: "2026-07-28", type: "out", quantity: 15, reference: "SALE-042", notes: "Retail sale" },
-  { id: 3, date: "2026-07-27", type: "out", quantity: 10, reference: "SALE-039", notes: "Retail sale" },
-  { id: 4, date: "2026-07-27", type: "in", quantity: 50, reference: "PO-002", notes: "Restock order" },
-  { id: 5, date: "2026-07-26", type: "out", quantity: 8, reference: "SALE-035", notes: "Retail sale" },
-  { id: 6, date: "2026-07-25", type: "out", quantity: 12, reference: "SALE-031", notes: "Bulk order" },
-];
+function getProductName(stock: ApiStock): string {
+  const p = stock.product;
+  if ("strength" in p && p.strength) return `${p.name} ${p.strength}`;
+  return p.name;
+}
+
+function getProductDetail(stock: ApiStock): string {
+  const p = stock.product;
+  if ("dosage_form" in p) return `${p.strength} · ${p.dosage_form}`;
+  if ("product_type" in p) return p.product_type;
+  return "";
+}
 
 export default function StockDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const medicine = mockMedicines.find((m) => m.id === Number(params.id));
+  const stock = mockStock.find((s) => s.id === Number(params.id));
 
-  if (!medicine) {
+  if (!stock) {
     return (
       <div className="space-y-4 sm:space-y-6">
         <div className="flex items-center gap-3">
@@ -45,7 +50,10 @@ export default function StockDetailPage() {
     );
   }
 
-  const branch = medicine.branch ?? mockBranches.find((b) => b.id === medicine.branch_id);
+  const isLow = stock.quantity <= stock.product.min_stock_alert;
+  const daysLeft = stock.expiry_date
+    ? Math.ceil((new Date(stock.expiry_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -58,7 +66,7 @@ export default function StockDetailPage() {
           <ArrowLeft className="h-4 w-4" />
         </button>
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">{medicine.name}</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">{getProductName(stock)}</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">Stock details</p>
         </div>
       </div>
@@ -67,23 +75,23 @@ export default function StockDetailPage() {
         <h2 className="mb-3 text-sm font-medium text-neutral-700 dark:text-neutral-300">Stock Information</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div>
-            <p className="text-xs text-neutral-500">Medicine</p>
-            <p className="text-sm font-medium">{medicine.name}</p>
-            <p className="text-xs text-neutral-500">{medicine.strength} · {medicine.dosage_form}</p>
+            <p className="text-xs text-neutral-500">Product</p>
+            <p className="text-sm font-medium">{stock.product.name}</p>
+            <p className="text-xs text-neutral-500">{getProductDetail(stock)}</p>
           </div>
           <div>
             <p className="text-xs text-neutral-500">Branch</p>
-            <p className="text-sm font-medium">{branch?.name ?? "All Branches"}</p>
+            <p className="text-sm font-medium">{stock.branch.name}</p>
           </div>
           <div>
-            <p className="text-xs text-neutral-500">Current Stock</p>
-            <p className={`text-sm font-semibold ${
-              medicine.current_stock <= medicine.min_stock_alert
-                ? "text-red-600 dark:text-red-400"
-                : ""
-            }`}>
-              {medicine.current_stock}
-              {medicine.current_stock <= medicine.min_stock_alert && (
+            <p className="text-xs text-neutral-500">Supplier</p>
+            <p className="text-sm font-medium">{stock.supplier?.name ?? "—"}</p>
+          </div>
+          <div>
+            <p className="text-xs text-neutral-500">Quantity</p>
+            <p className={`text-sm font-semibold ${isLow ? "text-red-600 dark:text-red-400" : ""}`}>
+              {stock.quantity}
+              {isLow && (
                 <span className="ml-1.5 text-[10px] font-medium text-red-600 bg-red-50 px-1 py-0.5 rounded dark:bg-red-950 dark:text-red-400">
                   LOW
                 </span>
@@ -92,56 +100,39 @@ export default function StockDetailPage() {
           </div>
           <div>
             <p className="text-xs text-neutral-500">Min Stock Alert</p>
-            <p className="text-sm">{medicine.min_stock_alert}</p>
+            <p className="text-sm">{stock.product.min_stock_alert}</p>
           </div>
           <div>
-            <p className="text-xs text-neutral-500">Pack Size</p>
-            <p className="text-sm">{medicine.pack_size}</p>
+            <p className="text-xs text-neutral-500">Batch Number</p>
+            <p className="text-sm font-mono">{stock.batch_number ?? "—"}</p>
           </div>
           <div>
-            <p className="text-xs text-neutral-500">Pack Price</p>
-            <p className="text-sm">ETB {medicine.pack_price}</p>
+            <p className="text-xs text-neutral-500">Expiry Date</p>
+            <p className={`text-sm ${daysLeft !== null && daysLeft <= 90 ? "text-amber-600 dark:text-amber-400 font-medium" : ""}`}>
+              {stock.expiry_date ?? "—"}
+              {daysLeft !== null && (
+                <span className="ml-1.5 text-xs text-neutral-500">({daysLeft} days left)</span>
+              )}
+            </p>
           </div>
           <div>
-            <p className="text-xs text-neutral-500">Unit Price</p>
-            <p className="text-sm">ETB {medicine.unit_price}</p>
+            <p className="text-xs text-neutral-500">Purchase Cost</p>
+            <p className="text-sm">ETB {stock.purchase_cost}</p>
           </div>
-        </div>
-      </div>
-
-      <div className="rounded-lg border border-border p-4 sm:p-5">
-        <h2 className="mb-3 text-sm font-medium text-neutral-700 dark:text-neutral-300">Stock History</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-xs text-neutral-500">
-                <th className="pb-2 font-medium">Date</th>
-                <th className="pb-2 font-medium">Type</th>
-                <th className="pb-2 font-medium">Quantity</th>
-                <th className="pb-2 font-medium">Reference</th>
-                <th className="pb-2 font-medium">Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {mockStockHistory.map((entry) => (
-                <tr key={entry.id} className="border-b border-border last:border-0">
-                  <td className="py-2.5 text-neutral-500">{entry.date}</td>
-                  <td className="py-2.5">
-                    <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${
-                      entry.type === "in"
-                        ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
-                        : "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400"
-                    }`}>
-                      {entry.type === "in" ? "IN" : "OUT"}
-                    </span>
-                  </td>
-                  <td className="py-2.5 font-medium">{entry.quantity}</td>
-                  <td className="py-2.5 text-neutral-500 font-mono text-xs">{entry.reference}</td>
-                  <td className="py-2.5 text-neutral-500">{entry.notes}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div>
+            <p className="text-xs text-neutral-500">Selling Price</p>
+            <p className="text-sm font-medium">ETB {stock.selling_price}</p>
+          </div>
+          {stock.profit_pct !== null && (
+            <div>
+              <p className="text-xs text-neutral-500">Profit Margin</p>
+              <p className="text-sm">{stock.profit_pct}%</p>
+            </div>
+          )}
+          <div>
+            <p className="text-xs text-neutral-500">Received</p>
+            <p className="text-sm">{new Date(stock.created_at).toLocaleDateString()}</p>
+          </div>
         </div>
       </div>
     </div>
