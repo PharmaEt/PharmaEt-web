@@ -157,7 +157,7 @@ export default function POSPage() {
   const totalItems = cart.length;
 
   return (
-    <div className="flex flex-col xl:flex-row gap-4">
+    <div className="flex flex-col xl:flex-row gap-4 overflow-hidden">
       {/* Left: Medicine List */}
       <div className="flex-1 rounded-lg border border-border bg-white dark:bg-[#0A0A0A]">
         {/* Search bar + category pills */}

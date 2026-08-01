@@ -2,31 +2,49 @@
 
 import { StatsCard } from "@/components/ui/stats-card";
 import { DataTable } from "@/components/ui/data-table";
-import { mockDashboardSales, mockAlerts, mockBranches } from "@/lib/mock-data";
+import { mockDashboard, mockAlerts, mockBranches } from "@/lib/mock-data";
+import type { ApiSale } from "@/lib/mock-data";
 
 const saleColumns = [
-  { key: "time", header: "Time" },
+  {
+    key: "time",
+    header: "Time",
+    render: (item: ApiSale) => (
+      <span className="text-sm">
+        {new Date(item.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+      </span>
+    ),
+  },
   {
     key: "items",
     header: "Items",
-    render: (item: typeof mockDashboardSales[0]) => (
-      <span className="text-neutral-500">{item.items} items</span>
+    render: (item: ApiSale) => (
+      <span className="text-neutral-500">{item.items.length} items</span>
     ),
     hideOnMobile: true,
   },
   {
     key: "total",
     header: "Total",
-    render: (item: typeof mockDashboardSales[0]) => (
-      <span className="font-medium">ETB {item.total.toLocaleString()}</span>
+    render: (item: ApiSale) => (
+      <span className="font-medium">ETB {parseFloat(item.total).toLocaleString()}</span>
     ),
   },
-  { key: "payment", header: "Payment", hideOnMobile: true },
+  {
+    key: "payment",
+    header: "Payment",
+    render: (item: ApiSale) => (
+      <span className="text-neutral-500">
+        {item.payment_type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+      </span>
+    ),
+    hideOnMobile: true,
+  },
   {
     key: "served_by",
     header: "Served By",
-    render: (item: typeof mockDashboardSales[0]) => (
-      <span className="text-neutral-500">{item.served_by}</span>
+    render: (item: ApiSale) => (
+      <span className="text-neutral-500">{item.served_by.name}</span>
     ),
     hideOnMobile: true,
   },
@@ -73,20 +91,22 @@ const topSelling = [
 const maxVal = Math.max(...topSelling.map((d) => d.value));
 
 export default function DashboardPage() {
+  const { today, month_revenue, total_stock, alerts } = mockDashboard;
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
-        <StatsCard title="Today's Sales" value="575.00 ETB" description="↑ 100 from yesterday" />
-        <StatsCard title="Total Medicines" value={2} description="Across 2 categories" />
-        <StatsCard title="Low Stock" value={0} description="Needs reorder" />
-        <StatsCard title="Expiring Soon" value={2} description="Within 180 days" />
+        <StatsCard title="Today's Sales" value={`${today.revenue.toLocaleString()} ETB`} description={`${today.sales_count} transactions today`} />
+        <StatsCard title="Total Stock" value={total_stock} description="Products in inventory" />
+        <StatsCard title="Low Stock" value={alerts.low_stock} description="Needs reorder" />
+        <StatsCard title="Expiring Soon" value={alerts.expiring_soon} description="Within alert window" />
       </div>
 
       <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
-        <StatsCard title="Today's Transactions" value={1} description="Completed sales today (receipts)" />
-        <StatsCard title="This Month's Sales" value="575.00 ETB" description="From Jul 01" />
-        <StatsCard title="Open Purchase Orders" value={2} description="0 received today" />
-        <StatsCard title="Inventory Value" value="110,800.00 ETB" description="579 total units on hand" />
+        <StatsCard title="Today's Transactions" value={today.sales_count} description="Completed sales today" />
+        <StatsCard title="This Month's Sales" value={`${month_revenue.toLocaleString()} ETB`} description="From start of month" />
+        <StatsCard title="Expired" value={alerts.expired} description="Expired stock batches" />
+        <StatsCard title="Recent Sales" value={mockDashboard.recent_sales.length} description="Latest transactions" />
       </div>
 
       {/* Mini Sales Chart */}
@@ -214,7 +234,7 @@ export default function DashboardPage() {
               View all
             </a>
           </div>
-          <DataTable columns={saleColumns} data={mockDashboardSales} />
+          <DataTable columns={saleColumns} data={mockDashboard.recent_sales} />
         </div>
       </div>
 

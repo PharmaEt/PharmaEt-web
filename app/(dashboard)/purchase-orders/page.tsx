@@ -7,25 +7,19 @@ import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/toast";
-
-const mockPOs = [
-  { id: 1, supplier: "Ethio Pharma Distribution", date: "2026-07-25", items: 5, total: 45000, status: "received" },
-  { id: 2, supplier: "Hawassa Medical Supplies", date: "2026-07-26", items: 3, total: 32000, status: "ordered" },
-  { id: 3, supplier: "Ethio Pharma Distribution", date: "2026-07-27", items: 2, total: 18500, status: "draft" },
-  { id: 4, supplier: "Dire Dawa Pharmaceuticals", date: "2026-07-28", items: 8, total: 67000, status: "partially_received" },
-  { id: 5, supplier: "Hawassa Medical Supplies", date: "2026-07-24", items: 4, total: 28000, status: "ordered" },
-];
+import { mockPurchaseOrders } from "@/lib/mock-data";
+import type { ApiPurchaseOrder } from "@/lib/mock-data";
 
 export default function PurchaseOrdersPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [pos, setPos] = useState(mockPOs);
+  const [pos, setPos] = useState(mockPurchaseOrders);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [cancelId, setCancelId] = useState<number | null>(null);
 
   const filtered = pos.filter((po) => {
-    const matchesSearch = po.supplier.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = po.supplier.name.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === "all" || po.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -43,44 +37,47 @@ export default function PurchaseOrdersPage() {
     {
       key: "id",
       header: "PO Number",
-      render: (item: typeof mockPOs[0]) => (
+      render: (item: ApiPurchaseOrder) => (
         <span className="font-medium text-sm">PO-{String(item.id).padStart(3, "0")}</span>
       ),
     },
     {
       key: "supplier",
       header: "Supplier",
-      render: (item: typeof mockPOs[0]) => (
-        <span className="text-sm">{item.supplier}</span>
+      render: (item: ApiPurchaseOrder) => (
+        <span className="text-sm">{item.supplier.name}</span>
       ),
     },
     {
       key: "date",
       header: "Date",
-      render: (item: typeof mockPOs[0]) => (
-        <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.date}</span>
+      render: (item: ApiPurchaseOrder) => (
+        <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.order_date}</span>
       ),
       hideOnMobile: true,
     },
     {
       key: "items",
       header: "Items",
-      render: (item: typeof mockPOs[0]) => (
-        <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.items}</span>
+      render: (item: ApiPurchaseOrder) => (
+        <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.items.length}</span>
       ),
       hideOnMobile: true,
     },
     {
       key: "total",
       header: "Total",
-      render: (item: typeof mockPOs[0]) => (
-        <span className="font-medium text-sm">{item.total.toLocaleString()} ETB</span>
-      ),
+      render: (item: ApiPurchaseOrder) => {
+        const total = item.items.reduce((sum, i) => sum + i.total_cost, 0);
+        return (
+          <span className="font-medium text-sm">{total.toLocaleString()} ETB</span>
+        );
+      },
     },
     {
       key: "status",
       header: "Status",
-      render: (item: typeof mockPOs[0]) => {
+      render: (item: ApiPurchaseOrder) => {
         const config = statusConfig[item.status] || statusConfig.pending;
         return (
           <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${config.className}`}>
@@ -93,7 +90,7 @@ export default function PurchaseOrdersPage() {
       key: "actions",
       header: "",
       className: "w-24",
-      render: (item: typeof mockPOs[0]) => (
+      render: (item: ApiPurchaseOrder) => (
         <div className="flex items-center gap-1">
           <button
             onClick={() => router.push(`/purchase-orders/${item.id}`)}
@@ -180,7 +177,7 @@ export default function PurchaseOrdersPage() {
         title="Cancel purchase order?"
         description="This will cancel the purchase order. This action cannot be undone."
         onConfirm={() => {
-          setPos((prev) => prev.map((po) => po.id === cancelId ? { ...po, status: "cancelled" } : po));
+          setPos((prev) => prev.map((po) => po.id === cancelId ? { ...po, status: "cancelled" as const } : po));
           setCancelId(null);
           toast("Purchase order cancelled");
         }}

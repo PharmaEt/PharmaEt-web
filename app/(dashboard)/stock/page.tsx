@@ -5,24 +5,21 @@ import { useRouter } from "next/navigation";
 import { Search, Eye, Plus } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
-import { mockMedicines, mockSuppliers } from "@/lib/mock-data";
+import { mockStock } from "@/lib/mock-data";
+import type { ApiStock } from "@/lib/mock-data";
 
-const expiryDates = [
-  "2026-09-15", "2026-10-01", "2026-11-01", "2026-12-01",
-  "2027-01-20", "2027-03-01", "2027-04-01", "2027-06-01",
-  "2027-02-01", "2027-08-15",
-];
+function getProductName(stock: ApiStock): string {
+  const p = stock.product;
+  if ("strength" in p && p.strength) return `${p.name} ${p.strength}`;
+  return p.name;
+}
 
-const mockStock = mockMedicines.map((m, i) => ({
-  id: m.id,
-  medicine: `${m.name} ${m.strength}`,
-  dosage_form: m.dosage_form,
-  supplier: mockSuppliers[i % mockSuppliers.length].name,
-  in_stock: m.current_stock,
-  min: m.min_stock_alert,
-  batch: `BN-${m.id}-2026`,
-  expiry: expiryDates[i % expiryDates.length],
-}));
+function getProductForm(stock: ApiStock): string {
+  const p = stock.product;
+  if ("dosage_form" in p) return p.dosage_form;
+  if ("product_type" in p) return p.product_type;
+  return "—";
+}
 
 export default function StockPage() {
   const router = useRouter();
@@ -30,44 +27,45 @@ export default function StockPage() {
   const [filter, setFilter] = useState("all");
 
   const filtered = mockStock.filter((s) => {
-    const matchesSearch = s.medicine.toLowerCase().includes(search.toLowerCase());
-    if (filter === "low") return matchesSearch && s.in_stock <= s.min;
-    if (filter === "ok") return matchesSearch && s.in_stock > s.min;
+    const name = getProductName(s).toLowerCase();
+    const matchesSearch = name.includes(search.toLowerCase());
+    if (filter === "low") return matchesSearch && s.quantity <= s.product.min_stock_alert;
+    if (filter === "ok") return matchesSearch && s.quantity > s.product.min_stock_alert;
     return matchesSearch;
   });
 
   const columns = [
     {
-      key: "medicine",
-      header: "Medicine",
-      render: (item: typeof mockStock[0]) => (
-        <span className="text-sm font-medium">{item.medicine}</span>
+      key: "product",
+      header: "Product",
+      render: (item: ApiStock) => (
+        <span className="text-sm font-medium">{getProductName(item)}</span>
       ),
     },
     {
-      key: "dosage_form",
-      header: "Dosage Form",
-      render: (item: typeof mockStock[0]) => (
-        <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.dosage_form}</span>
+      key: "form",
+      header: "Form",
+      render: (item: ApiStock) => (
+        <span className="text-sm text-neutral-600 dark:text-neutral-400">{getProductForm(item)}</span>
       ),
       hideOnMobile: true,
     },
     {
       key: "supplier",
       header: "Supplier",
-      render: (item: typeof mockStock[0]) => (
-        <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.supplier}</span>
+      render: (item: ApiStock) => (
+        <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.supplier?.name ?? "—"}</span>
       ),
       hideOnMobile: true,
     },
     {
-      key: "in_stock",
-      header: "In Stock (Units)",
-      render: (item: typeof mockStock[0]) => {
-        const isLow = item.in_stock <= item.min;
+      key: "quantity",
+      header: "In Stock",
+      render: (item: ApiStock) => {
+        const isLow = item.quantity <= item.product.min_stock_alert;
         return (
           <span className={`text-sm font-medium ${isLow ? "text-red-600 dark:text-red-400" : ""}`}>
-            {item.in_stock}
+            {item.quantity}
           </span>
         );
       },
@@ -75,28 +73,29 @@ export default function StockPage() {
     {
       key: "min",
       header: "Min",
-      render: (item: typeof mockStock[0]) => (
-        <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.min}</span>
+      render: (item: ApiStock) => (
+        <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.product.min_stock_alert}</span>
       ),
       hideOnMobile: true,
     },
     {
       key: "batch",
       header: "Batch",
-      render: (item: typeof mockStock[0]) => (
-        <span className="text-sm text-neutral-600 dark:text-neutral-400 font-mono">{item.batch}</span>
+      render: (item: ApiStock) => (
+        <span className="text-sm text-neutral-600 dark:text-neutral-400 font-mono">{item.batch_number ?? "—"}</span>
       ),
       hideOnMobile: true,
     },
     {
       key: "expiry",
       header: "Expiry",
-      render: (item: typeof mockStock[0]) => {
-        const daysLeft = Math.ceil((new Date(item.expiry).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      render: (item: ApiStock) => {
+        if (!item.expiry_date) return <span className="text-sm text-neutral-400">—</span>;
+        const daysLeft = Math.ceil((new Date(item.expiry_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
         const isUrgent = daysLeft <= 90;
         return (
           <span className={`text-sm ${isUrgent ? "text-amber-600 dark:text-amber-400" : "text-neutral-600 dark:text-neutral-400"}`}>
-            {item.expiry}
+            {item.expiry_date}
           </span>
         );
       },
@@ -105,8 +104,8 @@ export default function StockPage() {
     {
       key: "status",
       header: "Status",
-      render: (item: typeof mockStock[0]) => {
-        const isLow = item.in_stock <= item.min;
+      render: (item: ApiStock) => {
+        const isLow = item.quantity <= item.product.min_stock_alert;
         return (
           <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${
             isLow
@@ -122,7 +121,7 @@ export default function StockPage() {
       key: "actions",
       header: "",
       className: "w-12",
-      render: (item: typeof mockStock[0]) => (
+      render: (item: ApiStock) => (
         <button
           onClick={() => router.push(`/stock/${item.id}`)}
           aria-label="View"
