@@ -74,7 +74,7 @@ const navSections: NavSection[] = [
 
 export function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user, logout, isOwner, canManageUsers, canManageCatalog } = useAuth();
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
@@ -100,31 +100,42 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 pb-4">
-          {navSections.map((section) => (
-            <div key={section.label} className="mt-6">
-              <p className="mb-1 px-3 text-[10px] font-medium uppercase tracking-widest text-neutral-600">
-                {section.label}
-              </p>
-              {section.items.map((item) => {
-                const active = isActive(item.href);
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={onClose}
-                    className={`mb-0.5 flex items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors duration-100 ${active
-                      ? "bg-white/10 text-white"
-                      : "text-neutral-400 hover:bg-white/5 hover:text-neutral-100"
-                      }`}
-                  >
-                    <Icon className="h-4 w-4 flex-shrink-0" />
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
+          {navSections.map((section) => {
+            const filteredItems = section.items.filter((item) => {
+              if (item.href === "/branches") return isOwner;
+              if (item.href === "/users") return canManageUsers;
+              if (item.href === "/purchase-orders") return canManageCatalog;
+              return true;
+            });
+
+            if (filteredItems.length === 0) return null;
+
+            return (
+              <div key={section.label} className="mt-6">
+                <p className="mb-1 px-3 text-[10px] font-medium uppercase tracking-widest text-neutral-600">
+                  {section.label}
+                </p>
+                {filteredItems.map((item) => {
+                  const active = isActive(item.href);
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={onClose}
+                      className={`mb-0.5 flex items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors duration-100 ${active
+                        ? "bg-white/10 text-white"
+                        : "text-neutral-400 hover:bg-white/5 hover:text-neutral-100"
+                        }`}
+                    >
+                      <Icon className="h-4 w-4 flex-shrink-0" />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            );
+          })}
         </nav>
 
         <div className="border-t border-neutral-800 p-3">

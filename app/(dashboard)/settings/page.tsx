@@ -1,15 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
-import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/ui/page-header";
+import { TelegramModal } from "@/components/settings/telegram-modal";
 import { mockBranches } from "@/lib/mock-data";
 
 export default function SettingsPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const { toast } = useToast();
+  const [isTelegramOpen, setIsTelegramOpen] = useState(false);
 
   const userBranch = mockBranches.find((b) => b.id === user?.branch_id);
 
@@ -63,7 +64,7 @@ export default function SettingsPage() {
 
       <div className="rounded-lg border border-border">
         <div className="border-b border-border px-4 sm:px-5 py-3">
-          <h2 className="text-sm font-medium">Security</h2>
+          <h2 className="text-sm font-medium">Security & Notifications</h2>
         </div>
         <div className="divide-y divide-border">
           <div className="px-4 sm:px-5 py-3 flex items-center justify-between">
@@ -84,7 +85,7 @@ export default function SettingsPage() {
               <p className="text-xs text-neutral-500">{user?.telegram_chat_id ?? "Not configured"}</p>
             </div>
             <button
-              onClick={() => toast("Telegram configuration coming soon", "info")}
+              onClick={() => setIsTelegramOpen(true)}
               className="rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-900"
             >
               Configure
@@ -92,6 +93,12 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      <TelegramModal
+        isOpen={isTelegramOpen}
+        onClose={() => setIsTelegramOpen(false)}
+      />
     </div>
   );
 }
+

@@ -3,12 +3,23 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { type ApiUser } from "@/lib/mock-data";
 
+export type UserRole = "owner" | "manager" | "pharmacist" | "cashier" | "inventory_officer";
+
 interface AuthContextType {
   user: ApiUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (phone: string, password: string) => Promise<void>;
   logout: () => void;
+  switchRole: (role: UserRole) => void;
+  isOwner: boolean;
+  isManager: boolean;
+  canManageBranches: boolean;
+  canManageUsers: boolean;
+  canManageCatalog: boolean;
+  canVoidSale: boolean;
+  canUpdateSettings: boolean;
+  canDeleteRecords: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -24,6 +35,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const savedUser = localStorage.getItem("user");
         if (token && savedUser) {
           setUser(JSON.parse(savedUser));
+        } else {
+          // Default demo owner session
+          const defaultUser: ApiUser = {
+            id: 1,
+            branch_id: null,
+            name: "Bilal Ahmed",
+            email: "bilal@pharmaet.com",
+            phone: "+251911223344",
+            role: "owner",
+            status: "active",
+            telegram_chat_id: "123456789",
+            created_at: "2026-07-28T10:00:00.000000Z",
+            updated_at: "2026-07-28T10:00:00.000000Z",
+          };
+          setUser(defaultUser);
         }
       } catch {
         // ignore
@@ -45,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           phone,
           role: "owner",
           status: "active",
-          telegram_chat_id: null,
+          telegram_chat_id: "123456789",
           created_at: "2026-07-28T10:00:00.000000Z",
           updated_at: "2026-07-28T10:00:00.000000Z",
         };
@@ -54,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(userData);
         setIsLoading(false);
         resolve();
-      }, 800);
+      }, 600);
     });
   };
 
@@ -65,6 +91,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.href = "/auth/login";
   };
 
+  const switchRole = (role: UserRole) => {
+    if (!user) return;
+    const updated = { ...user, role };
+    setUser(updated);
+    localStorage.setItem("user", JSON.stringify(updated));
+  };
+
+  const role = user?.role ?? "cashier";
+  const isOwner = role === "owner";
+  const isManager = role === "manager";
+  const isInventory = role === "inventory_officer";
+
   return (
     <AuthContext.Provider
       value={{
@@ -73,6 +111,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         login,
         logout,
+        switchRole,
+        isOwner,
+        isManager,
+        canManageBranches: isOwner,
+        canManageUsers: isOwner || isManager,
+        canManageCatalog: isOwner || isManager || isInventory,
+        canVoidSale: isOwner || isManager,
+        canUpdateSettings: isOwner,
+        canDeleteRecords: isOwner,
       }}
     >
       {children}

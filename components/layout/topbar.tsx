@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { ChevronDown, Menu } from "lucide-react";
-import { useAuth } from "@/context/auth-context";
+import { ChevronDown, Menu, Shield } from "lucide-react";
+import { useAuth, type UserRole } from "@/context/auth-context";
 
 const pageTitles: Record<string, string> = {
   "/": "Dashboard",
@@ -30,7 +30,7 @@ const pageTitles: Record<string, string> = {
 
 export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user, logout, switchRole } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const getBreadcrumbs = () => {
@@ -101,6 +101,21 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
       </div>
 
       <div className="flex items-center gap-2.5">
+        {/* Role Switcher Badge */}
+        <div className="flex items-center gap-1.5 rounded-md border border-neutral-200 bg-neutral-50 px-2 py-1 text-xs dark:border-neutral-800 dark:bg-neutral-900">
+          <Shield className="h-3.5 w-3.5 text-neutral-500" />
+          <select
+            value={user?.role ?? "owner"}
+            onChange={(e) => switchRole(e.target.value as UserRole)}
+            className="bg-transparent font-medium capitalize text-neutral-800 focus:outline-none dark:text-neutral-200 cursor-pointer"
+          >
+            <option value="owner">Role: Owner</option>
+            <option value="manager">Role: Manager</option>
+            <option value="pharmacist">Role: Pharmacist</option>
+            <option value="cashier">Role: Cashier</option>
+            <option value="inventory_officer">Role: Inventory Officer</option>
+          </select>
+        </div>
 
         <div className="relative">
           <button
@@ -125,7 +140,7 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
               <div className="absolute right-0 top-full z-50 mt-1.5 w-52 overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-[#0A0A0A]">
                 <div className="border-b border-neutral-200 px-3.5 py-2.5 dark:border-neutral-800">
                   <p className="text-[13px] font-medium text-neutral-900 dark:text-neutral-100">{user?.name}</p>
-                  <p className="mt-0.5 text-xs text-neutral-500">{user?.email}</p>
+                  <p className="mt-0.5 text-xs text-neutral-500 capitalize">{user?.role?.replace("_", " ")}</p>
                 </div>
                 <div className="p-1">
                   <Link
@@ -161,3 +176,4 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
     </header>
   );
 }
+
