@@ -71,6 +71,32 @@ export interface ApiMedicine {
   updated_at: string;
 }
 
+export interface ApiCosmetic {
+  id: number;
+  category_id: number;
+  branch_id: number | null;
+  name: string;
+  sku: string;
+  barcode: string | null;
+  pack_size: number;
+  pack_price: number;
+  unit_price: number;
+  current_stock: number;
+  description: string | null;
+  min_stock_alert: number;
+  status: "active" | "inactive";
+  product_type: string;
+  size: string | null;
+  unit: string | null;
+  color: string | null;
+  shade: string | null;
+  ingredients: string | null;
+  category: ApiCategory | null;
+  branch: ApiBranch | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   message: string;
@@ -337,6 +363,39 @@ export const mockCategories: ApiCategory[] = [
     created_at: "2026-07-28T10:00:00.000000Z",
     updated_at: "2026-07-28T10:00:00.000000Z",
   },
+  {
+    id: 9,
+    name: "Skincare",
+    slug: "skincare",
+    description: "Skincare and moisturizing products",
+    branch_id: null,
+    status: "active",
+    branch: null,
+    created_at: "2026-07-28T10:00:00.000000Z",
+    updated_at: "2026-07-28T10:00:00.000000Z",
+  },
+  {
+    id: 10,
+    name: "Haircare",
+    slug: "haircare",
+    description: "Shampoo, conditioner, and hair products",
+    branch_id: null,
+    status: "active",
+    branch: null,
+    created_at: "2026-07-28T10:00:00.000000Z",
+    updated_at: "2026-07-28T10:00:00.000000Z",
+  },
+  {
+    id: 11,
+    name: "Makeup",
+    slug: "makeup",
+    description: "Cosmetic makeup products",
+    branch_id: null,
+    status: "active",
+    branch: null,
+    created_at: "2026-07-28T10:00:00.000000Z",
+    updated_at: "2026-07-28T10:00:00.000000Z",
+  },
 ];
 
 // ─── Mock Medicines ─────────────────────────────────────
@@ -549,6 +608,161 @@ export const mockMedicines: ApiMedicine[] = [
     status: "active",
     category: mockCategories[4],
     branch: null,
+    created_at: "2026-07-28T10:00:00.000000Z",
+    updated_at: "2026-07-28T10:00:00.000000Z",
+  },
+];
+
+// ─── Mock Cosmetics ────────────────────────────────────
+
+export const mockCosmetics: ApiCosmetic[] = [
+  {
+    id: 101,
+    category_id: 9,
+    branch_id: 1,
+    name: "Nivea Soft Moisturizing Cream",
+    sku: "NIVEA-SOFT-100",
+    barcode: "6902064650039",
+    pack_size: 1,
+    pack_price: 350,
+    unit_price: 350,
+    current_stock: 120,
+    description: "Lightweight moisturizing cream for daily use",
+    min_stock_alert: 30,
+    status: "active",
+    product_type: "Cream",
+    size: "100ml",
+    unit: "tube",
+    color: null,
+    shade: null,
+    ingredients: "Water, Glycerin, Mineral Oil",
+    category: mockCategories[8],
+    branch: mockBranches[1],
+    created_at: "2026-07-28T10:00:00.000000Z",
+    updated_at: "2026-07-28T10:00:00.000000Z",
+  },
+  {
+    id: 102,
+    category_id: 9,
+    branch_id: 1,
+    name: "Vaseline Intensive Care Lotion",
+    sku: "VAS-IC-200",
+    barcode: "6902064650100",
+    pack_size: 1,
+    pack_price: 420,
+    unit_price: 420,
+    current_stock: 85,
+    description: "Deep moisture body lotion",
+    min_stock_alert: 20,
+    status: "active",
+    product_type: "Lotion",
+    size: "200ml",
+    unit: "bottle",
+    color: null,
+    shade: null,
+    ingredients: "Water, Glycerin, Petrolatum",
+    category: mockCategories[8],
+    branch: mockBranches[1],
+    created_at: "2026-07-28T10:00:00.000000Z",
+    updated_at: "2026-07-28T10:00:00.000000Z",
+  },
+  {
+    id: 103,
+    category_id: 10,
+    branch_id: null,
+    name: "Sunsilk Shampoo Black Shine",
+    sku: "SUN-SLK-BLK",
+    barcode: "6902064650200",
+    pack_size: 1,
+    pack_price: 280,
+    unit_price: 280,
+    current_stock: 200,
+    description: "Shampoo for black hair shine",
+    min_stock_alert: 40,
+    status: "active",
+    product_type: "Shampoo",
+    size: "400ml",
+    unit: "bottle",
+    color: "Black",
+    shade: null,
+    ingredients: "Water, Sodium Laureth Sulfate, Fragrance",
+    category: mockCategories[9],
+    branch: null,
+    created_at: "2026-07-28T10:00:00.000000Z",
+    updated_at: "2026-07-28T10:00:00.000000Z",
+  },
+  {
+    id: 104,
+    category_id: 10,
+    branch_id: 1,
+    name: "Pantene conditioner Smooth",
+    sku: "PAN-CON-SMO",
+    barcode: "6902064650300",
+    pack_size: 1,
+    pack_price: 310,
+    unit_price: 310,
+    current_stock: 65,
+    description: "Smooth and silky conditioner",
+    min_stock_alert: 15,
+    status: "active",
+    product_type: "Conditioner",
+    size: "350ml",
+    unit: "bottle",
+    color: "White",
+    shade: null,
+    ingredients: "Water, Cetyl Alcohol, Stearyl Alcohol",
+    category: mockCategories[9],
+    branch: mockBranches[1],
+    created_at: "2026-07-28T10:00:00.000000Z",
+    updated_at: "2026-07-28T10:00:00.000000Z",
+  },
+  {
+    id: 105,
+    category_id: 11,
+    branch_id: null,
+    name: "Maybelline Fit Me Foundation",
+    sku: "MAY-FM-FND",
+    barcode: "6902064650400",
+    pack_size: 1,
+    pack_price: 850,
+    unit_price: 850,
+    current_stock: 40,
+    description: "Matte + poreless foundation",
+    min_stock_alert: 10,
+    status: "active",
+    product_type: "Makeup",
+    size: "30ml",
+    unit: "bottle",
+    color: "Natural Beige",
+    shade: "128",
+    ingredients: "Water, Dimethicone, Glycerin",
+    category: mockCategories[10],
+    branch: null,
+    created_at: "2026-07-28T10:00:00.000000Z",
+    updated_at: "2026-07-28T10:00:00.000000Z",
+  },
+  {
+    id: 106,
+    category_id: 11,
+    branch_id: 1,
+    name: "Vaseline Lip Therapy",
+    sku: "VAS-LIP-10",
+    barcode: "6902064650500",
+    pack_size: 1,
+    pack_price: 150,
+    unit_price: 150,
+    current_stock: 180,
+    description: "Moisturizing lip balm",
+    min_stock_alert: 30,
+    status: "active",
+    product_type: "Lip Care",
+    size: "10g",
+    unit: "tin",
+    color: "Pink",
+    shade: "Rosy",
+    ingredients: "Petrolatum, Lanolin, Cocoa Butter",
+    category: mockCategories[10],
+    branch: mockBranches[1],
     created_at: "2026-07-28T10:00:00.000000Z",
     updated_at: "2026-07-28T10:00:00.000000Z",
   },

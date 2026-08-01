@@ -2,12 +2,29 @@
 
 import { useState, useRef } from "react";
 import { Search, X, Minus, Plus, ShoppingCart, Check, Printer } from "lucide-react";
-import { mockMedicines, mockCategories } from "@/lib/mock-data";
+import { mockMedicines, mockCosmetics, mockCategories } from "@/lib/mock-data";
+import type { ApiMedicine, ApiCosmetic } from "@/lib/mock-data";
 import { useToast } from "@/components/ui/toast";
 import { Receipt, type ReceiptData } from "@/components/ui/receipt";
 
+interface UnifiedProduct {
+  id: number;
+  name: string;
+  type: "medicine" | "cosmetic";
+  category_id: number;
+  pack_size: number;
+  pack_price: number;
+  unit_price: number;
+  current_stock: number;
+  min_stock_alert: number;
+  status: string;
+  category: { name: string } | null;
+  medicine?: ApiMedicine;
+  cosmetic?: ApiCosmetic;
+}
+
 interface CartItem {
-  medicine: typeof mockMedicines[0];
+  product: UnifiedProduct;
   quantity: number;
   unit: "pack" | "single";
   price: number;
@@ -17,7 +34,7 @@ export default function POSPage() {
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [activeCategory, setActiveCategory] = useState("all");
-  const [activeDosageForm, setActiveDosageForm] = useState("all");
+  const [activeProductType, setActiveProductType] = useState("all");
   const [discountPercent, setDiscountPercent] = useState(0);
   const [paymentType, setPaymentType] = useState("Cash");
   const [cashGiven, setCashGiven] = useState(0);
@@ -28,35 +45,66 @@ export default function POSPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const categories = ["all", ...mockCategories.map((c) => c.name)];
-  const dosageForms = ["all", "Tablet", "Syrup", "Injection", "Cream", "Ointment", "Drops", "Inhaler"];
+  const unifiedProducts: UnifiedProduct[] = [
+    ...mockMedicines.map((m) => ({
+      id: m.id,
+      name: m.name,
+      type: "medicine" as const,
+      category_id: m.category_id,
+      pack_size: m.pack_size,
+      pack_price: m.pack_price,
+      unit_price: m.unit_price,
+      current_stock: m.current_stock,
+      min_stock_alert: m.min_stock_alert,
+      status: m.status,
+      category: m.category,
+      medicine: m,
+    })),
+    ...mockCosmetics.map((c) => ({
+      id: c.id,
+      name: c.name,
+      type: "cosmetic" as const,
+      category_id: c.category_id,
+      pack_size: c.pack_size,
+      pack_price: c.pack_price,
+      unit_price: c.unit_price,
+      current_stock: c.current_stock,
+      min_stock_alert: c.min_stock_alert,
+      status: c.status,
+      category: c.category,
+      cosmetic: c,
+    })),
+  ];
 
-  const filteredMedicines = mockMedicines.filter((m) => {
-    if (m.status !== "active") return false;
-    const matchesSearch =
-      m.name.toLowerCase().includes(search.toLowerCase()) ||
-      m.generic_name.toLowerCase().includes(search.toLowerCase());
-    const matchesCategory =
-      activeCategory === "all" || m.category?.name === activeCategory;
-    const matchesDosageForm =
-      activeDosageForm === "all" || m.dosage_form === activeDosageForm;
-    return matchesSearch && matchesCategory && matchesDosageForm;
+  const categories = ["all", ...mockCategories.map((c) => c.name)];
+  const productTypes = ["all", "Medicine", "Cosmetic"];
+  const cosmeticTypes = ["all", "Cream", "Lotion", "Shampoo", "Conditioner", "Makeup", "Lip Care", "Serum"];
+
+  const filteredProducts = unifiedProducts.filter((p) => {
+    if (p.status !== "active") return false;
+    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
+    const matchesCategory = activeCategory === "all" || p.category?.name === activeCategory;
+    const matchesProductType =
+      activeProductType === "all" ||
+      (activeProductType === "Medicine" && p.type === "medicine") ||
+      (activeProductType === "Cosmetic" && p.type === "cosmetic");
+    return matchesSearch && matchesCategory && matchesProductType;
   });
 
-  const addToCart = (medicine: typeof mockMedicines[0], unit: "pack" | "single") => {
-    const price = unit === "pack" ? medicine.pack_price : medicine.unit_price;
+  const addToCart = (product: UnifiedProduct, unit: "pack" | "single") => {
+    const price = unit === "pack" ? product.pack_price : product.unit_price;
     setCart((prev) => {
       const existing = prev.find(
-        (item) => item.medicine.id === medicine.id && item.unit === unit
+        (item) => item.product.id === product.id && item.unit === unit
       );
       if (existing) {
         return prev.map((item) =>
-          item.medicine.id === medicine.id && item.unit === unit
+          item.product.id === product.id && item.unit === unit
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       }
-      return [...prev, { medicine, quantity: 1, unit, price }];
+      return [...prev, { product, quantity: 1, unit, price }];
     });
   };
 
@@ -142,16 +190,16 @@ export default function POSPage() {
               ))}
             </div>
             <div className="flex gap-2 overflow-x-auto scrollbar-none">
-              {dosageForms.map((df) => (
+              {productTypes.map((pt) => (
                 <button
-                  key={df}
-                  onClick={() => setActiveDosageForm(df)}
-                  className={`flex-shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${activeDosageForm === df
+                  key={pt}
+                  onClick={() => setActiveProductType(pt)}
+                  className={`flex-shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${activeProductType === pt
                     ? "bg-neutral-900 text-white dark:bg-white dark:text-black"
                     : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700"
                     }`}
                 >
-                  {df === "all" ? "All Forms" : df}
+                  {pt === "all" ? "All Products" : pt}
                 </button>
               ))}
             </div>
@@ -163,7 +211,7 @@ export default function POSPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-border text-left">
-                <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500">Medicine</th>
+                <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500">Product</th>
                 <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500">Category</th>
                 <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 text-right">Pack</th>
                 <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 text-right">Single</th>
@@ -172,17 +220,26 @@ export default function POSPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredMedicines.map((med) => {
-                const cat = med.category ?? mockCategories.find((c) => c.id === med.category_id);
+              {filteredProducts.map((prod) => {
+                const cat = prod.category ?? mockCategories.find((c) => c.id === prod.category_id);
                 return (
-                  <tr key={med.id} className="border-b border-border last:border-b-0 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors">
+                  <tr key={`${prod.type}-${prod.id}`} className="border-b border-border last:border-b-0 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors">
                     <td className="px-4 py-2.5">
-                      <p className="text-sm font-medium">{med.name} - {med.strength}</p>
+                      <p className="text-sm font-medium">{prod.name}</p>
                       <div className="mt-0.5 flex items-center gap-1.5">
-                        <span className="inline-flex items-center rounded bg-neutral-100 px-1.5 py-0.5 text-xs font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
-                          {med.dosage_form}
+                        <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium ${
+                          prod.type === "medicine"
+                            ? "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400"
+                            : "bg-pink-50 text-pink-700 dark:bg-pink-950 dark:text-pink-400"
+                        }`}>
+                          {prod.type === "medicine" ? prod.medicine?.dosage_form : prod.cosmetic?.product_type}
                         </span>
-                        <span className="text-xs text-neutral-500">{med.generic_name}</span>
+                        {prod.type === "medicine" && prod.medicine && (
+                          <span className="text-xs text-neutral-500">{prod.medicine.generic_name}</span>
+                        )}
+                        {prod.type === "cosmetic" && prod.cosmetic?.size && (
+                          <span className="text-xs text-neutral-500">{prod.cosmetic.size}</span>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-2.5">
@@ -190,19 +247,19 @@ export default function POSPage() {
                         {cat?.name ?? "—"}
                       </span>
                     </td>
-                    <td className="px-4 py-2.5 text-right text-sm text-neutral-600 dark:text-neutral-400">{med.pack_price.toFixed(2)} ETB</td>
-                    <td className="px-4 py-2.5 text-right text-sm text-neutral-600 dark:text-neutral-400">{med.unit_price.toFixed(2)} ETB</td>
-                    <td className="px-4 py-2.5 text-right text-sm font-medium">{med.current_stock}</td>
+                    <td className="px-4 py-2.5 text-right text-sm text-neutral-600 dark:text-neutral-400">{prod.pack_price.toFixed(2)} ETB</td>
+                    <td className="px-4 py-2.5 text-right text-sm text-neutral-600 dark:text-neutral-400">{prod.unit_price.toFixed(2)} ETB</td>
+                    <td className="px-4 py-2.5 text-right text-sm font-medium">{prod.current_stock}</td>
                     <td className="px-4 py-2.5 text-center">
                       <div className="inline-flex gap-1">
                         <button
-                          onClick={() => addToCart(med, "pack")}
+                          onClick={() => addToCart(prod, "pack")}
                           className="inline-flex h-7 items-center justify-center rounded border border-neutral-200 px-2.5 text-xs font-medium transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900"
                         >
                           Pack
                         </button>
                         <button
-                          onClick={() => addToCart(med, "single")}
+                          onClick={() => addToCart(prod, "single")}
                           className="inline-flex h-7 items-center justify-center rounded border border-neutral-200 px-2.5 text-xs font-medium transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900"
                         >
                           Single
@@ -212,10 +269,10 @@ export default function POSPage() {
                   </tr>
                 );
               })}
-              {filteredMedicines.length === 0 && (
+              {filteredProducts.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-4 py-12 text-center">
-                    <p className="text-sm text-neutral-500">No medicines found</p>
+                    <p className="text-sm text-neutral-500">No products found</p>
                   </td>
                 </tr>
               )}
@@ -225,33 +282,42 @@ export default function POSPage() {
 
         {/* Cards view - mobile only */}
         <div className="sm:hidden divide-y divide-border">
-          {filteredMedicines.map((med) => {
-            const cat = med.category ?? mockCategories.find((c) => c.id === med.category_id);
+          {filteredProducts.map((prod) => {
+            const cat = prod.category ?? mockCategories.find((c) => c.id === prod.category_id);
             const inCartPack = cart.find(
-              (item) => item.medicine.id === med.id && item.unit === "pack"
+              (item) => item.product.id === prod.id && item.unit === "pack"
             );
             const inCartSingle = cart.find(
-              (item) => item.medicine.id === med.id && item.unit === "single"
+              (item) => item.product.id === prod.id && item.unit === "single"
             );
-            const isLow = med.current_stock <= med.min_stock_alert;
+            const isLow = prod.current_stock <= prod.min_stock_alert;
             return (
-              <div key={med.id} className="flex items-center gap-3 px-3 py-3">
+              <div key={`${prod.type}-${prod.id}`} className="flex items-center gap-3 px-3 py-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">{med.name} - {med.strength}</p>
+                  <p className="text-sm font-medium">{prod.name}</p>
                   <div className="mt-0.5 flex items-center gap-1.5">
-                    <span className="inline-flex items-center rounded bg-neutral-100 px-1.5 py-0.5 text-xs font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
-                      {med.dosage_form}
+                    <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium ${
+                      prod.type === "medicine"
+                        ? "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400"
+                        : "bg-pink-50 text-pink-700 dark:bg-pink-950 dark:text-pink-400"
+                    }`}>
+                      {prod.type === "medicine" ? prod.medicine?.dosage_form : prod.cosmetic?.product_type}
                     </span>
-                    <span className="text-xs text-neutral-500">{med.generic_name}</span>
+                    {prod.type === "medicine" && prod.medicine && (
+                      <span className="text-xs text-neutral-500">{prod.medicine.generic_name}</span>
+                    )}
+                    {prod.type === "cosmetic" && prod.cosmetic?.size && (
+                      <span className="text-xs text-neutral-500">{prod.cosmetic.size}</span>
+                    )}
                   </div>
                   <div className="mt-1 flex items-center gap-2">
                     <span className="inline-flex items-center rounded border border-neutral-200 px-1.5 py-0.5 text-xs font-medium dark:border-neutral-800">
                       {cat?.name ?? "—"}
                     </span>
                     {isLow ? (
-                      <span className="text-xs font-medium text-amber-600">Low ({med.current_stock})</span>
+                      <span className="text-xs font-medium text-amber-600">Low ({prod.current_stock})</span>
                     ) : (
-                      <span className="text-xs text-neutral-400">{med.current_stock}</span>
+                      <span className="text-xs text-neutral-400">{prod.current_stock}</span>
                     )}
                   </div>
                 </div>
@@ -260,7 +326,7 @@ export default function POSPage() {
                     <div className="flex items-center gap-1 rounded border border-neutral-200 dark:border-neutral-800">
                       <button
                         onClick={() => {
-                          const idx = cart.findIndex((i) => i.medicine.id === med.id && i.unit === "pack");
+                          const idx = cart.findIndex((i) => i.product.id === prod.id && i.unit === "pack");
                           if (idx !== -1) updateQuantity(idx, -1);
                         }}
                         aria-label="Decrease pack quantity"
@@ -270,7 +336,7 @@ export default function POSPage() {
                       </button>
                       <span className="w-5 text-center text-xs font-medium">{inCartPack.quantity}</span>
                       <button
-                        onClick={() => addToCart(med, "pack")}
+                        onClick={() => addToCart(prod, "pack")}
                         aria-label="Increase pack quantity"
                         className="flex h-7 w-7 items-center justify-center"
                       >
@@ -279,18 +345,18 @@ export default function POSPage() {
                     </div>
                   ) : (
                     <button
-                      onClick={() => addToCart(med, "pack")}
+                      onClick={() => addToCart(prod, "pack")}
                       className="inline-flex items-center gap-1 rounded border border-neutral-200 px-2.5 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-900"
                     >
                       <span className="text-neutral-400">Pack</span>
-                      <span>{med.pack_price.toFixed(0)}</span>
+                      <span>{prod.pack_price.toFixed(0)}</span>
                     </button>
                   )}
                   {inCartSingle ? (
                     <div className="flex items-center gap-1 rounded border border-neutral-200 dark:border-neutral-800">
                       <button
                         onClick={() => {
-                          const idx = cart.findIndex((i) => i.medicine.id === med.id && i.unit === "single");
+                          const idx = cart.findIndex((i) => i.product.id === prod.id && i.unit === "single");
                           if (idx !== -1) updateQuantity(idx, -1);
                         }}
                         aria-label="Decrease single quantity"
@@ -300,7 +366,7 @@ export default function POSPage() {
                       </button>
                       <span className="w-5 text-center text-xs font-medium">{inCartSingle.quantity}</span>
                       <button
-                        onClick={() => addToCart(med, "single")}
+                        onClick={() => addToCart(prod, "single")}
                         aria-label="Increase single quantity"
                         className="flex h-7 w-7 items-center justify-center"
                       >
@@ -309,20 +375,20 @@ export default function POSPage() {
                     </div>
                   ) : (
                     <button
-                      onClick={() => addToCart(med, "single")}
+                      onClick={() => addToCart(prod, "single")}
                       className="inline-flex items-center gap-1 rounded border border-neutral-200 px-2.5 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-900"
                     >
                       <span className="text-neutral-400">Unit</span>
-                      <span>{med.unit_price.toFixed(0)}</span>
+                      <span>{prod.unit_price.toFixed(0)}</span>
                     </button>
                   )}
                 </div>
               </div>
             );
           })}
-          {filteredMedicines.length === 0 && (
+          {filteredProducts.length === 0 && (
             <div className="py-12 text-center">
-              <p className="text-sm text-neutral-500">No medicines found</p>
+              <p className="text-sm text-neutral-500">No products found</p>
             </div>
           )}
         </div>
@@ -348,9 +414,9 @@ export default function POSPage() {
           ) : (
             <div className="divide-y divide-border">
               {cart.map((item, index) => (
-                <div key={`${item.medicine.id}-${item.unit}`} className="flex items-center gap-3 py-2.5">
+                <div key={`${item.product.id}-${item.unit}`} className="flex items-center gap-3 py-2.5">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{item.medicine.name}</p>
+                    <p className="text-sm font-medium truncate">{item.product.name}</p>
                     <p className="text-[11px] text-neutral-500">
                       {item.unit === "pack" ? "Pack" : "Single"} · {item.price.toFixed(2)} ETB
                     </p>
@@ -557,9 +623,9 @@ export default function POSPage() {
               ) : (
                 <div className="divide-y divide-border">
                   {cart.map((item, index) => (
-                    <div key={`${item.medicine.id}-${item.unit}`} className="flex items-center gap-3 py-3">
+                    <div key={`${item.product.id}-${item.unit}`} className="flex items-center gap-3 py-3">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{item.medicine.name}</p>
+                        <p className="text-sm font-medium truncate">{item.product.name}</p>
                         <p className="text-[11px] text-neutral-500">
                           {item.unit === "pack" ? "Pack" : "Single"} · {item.price.toFixed(2)} ETB
                         </p>
@@ -734,7 +800,9 @@ export default function POSPage() {
                   cashier: "Current User",
                   paymentMethod: paymentType,
                   items: cart.map((item) => ({
-                    name: `${item.medicine.name} ${item.medicine.strength} ${item.medicine.dosage_form}`,
+                    name: item.product.type === "medicine" && item.product.medicine
+                      ? `${item.product.name} ${item.product.medicine.strength} ${item.product.medicine.dosage_form}`
+                      : item.product.name,
                     qty: item.quantity,
                     price: item.price,
                     total: item.price * item.quantity,

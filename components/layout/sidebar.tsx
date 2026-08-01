@@ -10,6 +10,7 @@ import {
   Truck,
   Tag,
   Pill,
+  Sparkles,
   Package,
   AlertTriangle,
   ArrowLeftRight,
@@ -46,6 +47,7 @@ const navSections: NavSection[] = [
       { label: "Suppliers", href: "/suppliers", icon: Truck },
       { label: "Categories", href: "/categories", icon: Tag },
       { label: "Medicines", href: "/medicines", icon: Pill },
+      { label: "Cosmetics", href: "/cosmetics", icon: Sparkles },
     ],
   },
   {
