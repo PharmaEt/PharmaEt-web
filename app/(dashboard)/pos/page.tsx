@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Search, X, Minus, Plus, ShoppingCart, Check, Printer } from "lucide-react";
+import { Search, X, Minus, Plus, ShoppingCart, Check, Printer, DollarSign, Clock, Lock, ShieldCheck } from "lucide-react";
 import { mockMedicines, mockCosmetics, mockCategories } from "@/lib/mock-data";
 import type { ApiMedicine, ApiCosmetic } from "@/lib/mock-data";
 import { useToast } from "@/components/ui/toast";
-import { Receipt, type ReceiptData } from "@/components/ui/receipt";
+import { useAuth } from "@/context/auth-context";
+import { Receipt } from "@/components/ui/receipt";
+import { StartShiftModal } from "@/components/pos/start-shift-modal";
+import { CloseShiftModal, type ShiftSummaryData } from "@/components/pos/close-shift-modal";
 
 interface UnifiedProduct {
   id: number;
@@ -31,6 +34,8 @@ interface CartItem {
 }
 
 export default function POSPage() {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [activeCategory, setActiveCategory] = useState("all");
@@ -43,7 +48,35 @@ export default function POSPage() {
   const [completed, setCompleted] = useState(false);
   const [lastSaleId, setLastSaleId] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
+
+  // Shift Management State
+  const [isShiftOpen, setIsShiftOpen] = useState(true);
+  const [openingFloat, setOpeningFloat] = useState(1000);
+  const [startTime, setStartTime] = useState("08:30 AM");
+  const [cashSales, setCashSales] = useState(3250);
+  const [telebirrSales, setTelebirrSales] = useState(1400);
+  const [cardSales, setCardSales] = useState(850);
+  const [startShiftModalOpen, setStartShiftModalOpen] = useState(false);
+  const [closeShiftModalOpen, setCloseShiftModalOpen] = useState(false);
+  const [totalSalesCount, setTotalSalesCount] = useState(12);
+
+  const handleStartShift = (floatVal: number) => {
+    setOpeningFloat(floatVal);
+    setIsShiftOpen(true);
+    setStartShiftModalOpen(false);
+    const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    setStartTime(now);
+    setCashSales(0);
+    setTelebirrSales(0);
+    setCardSales(0);
+    setTotalSalesCount(0);
+    toast(`Register shift opened with ${floatVal.toLocaleString()} ETB float`, "success");
+  };
+
+  const handleCompleteCloseShift = () => {
+    setIsShiftOpen(false);
+    setCloseShiftModalOpen(false);
+  };
 
   const unifiedProducts: UnifiedProduct[] = [
     ...mockMedicines.map((m) => ({
@@ -128,6 +161,11 @@ export default function POSPage() {
   };
 
   const completeSale = () => {
+    if (!isShiftOpen) {
+      toast("Register shift is closed. Open shift before selling.", "error");
+      setStartShiftModalOpen(true);
+      return;
+    }
     if (cart.length === 0) {
       toast("Cart is empty. Add items before completing a sale.", "error");
       return;
@@ -136,6 +174,16 @@ export default function POSPage() {
       toast("Cash given is less than the total.", "error");
       return;
     }
+
+    if (paymentType === "Cash") {
+      setCashSales((prev) => prev + total);
+    } else if (paymentType === "Telebirr" || paymentType === "Mobile Money") {
+      setTelebirrSales((prev) => prev + total);
+    } else {
+      setCardSales((prev) => prev + total);
+    }
+    setTotalSalesCount((prev) => prev + 1);
+
     const id = `SALE-${String(Math.floor(1000 + Math.random() * 9000))}`;
     setLastSaleId(id);
     setCompleted(true);
@@ -157,9 +205,58 @@ export default function POSPage() {
   const totalItems = cart.length;
 
   return (
-    <div className="flex flex-col xl:flex-row gap-4 overflow-hidden">
+    <div className="space-y-3">
+      {/* Active Shift Header Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-[#0A0A0A]">
+        {isShiftOpen ? (
+          <div className="flex flex-wrap items-center gap-4 text-xs">
+            <div className="flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Shift Active</span>
+            </div>
+            <div className="flex items-center gap-1 text-neutral-500">
+              <Clock className="h-3.5 w-3.5" />
+              <span>Started: <strong className="text-neutral-800 dark:text-neutral-200">{startTime}</strong></span>
+            </div>
+            <div className="flex items-center gap-1 text-neutral-500">
+              <DollarSign className="h-3.5 w-3.5" />
+              <span>Float: <strong className="text-neutral-800 dark:text-neutral-200">{openingFloat.toLocaleString()} ETB</strong></span>
+            </div>
+            <div className="hidden sm:flex items-center gap-1 text-neutral-500">
+              <span>Today&apos;s Cash: <strong className="text-emerald-600 dark:text-emerald-400">+{cashSales.toLocaleString()} ETB</strong></span>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-400 font-medium">
+            <Lock className="h-4 w-4 text-amber-500" />
+            <span>Register Shift Closed — Open shift to process sales</span>
+          </div>
+        )}
+
+        <div>
+          {isShiftOpen ? (
+            <button
+              onClick={() => setCloseShiftModalOpen(true)}
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-neutral-200 bg-neutral-50 px-3 text-xs font-medium text-neutral-700 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
+            >
+              <Lock className="h-3.5 w-3.5" />
+              Close Shift & Reconcile
+            </button>
+          ) : (
+            <button
+              onClick={() => setStartShiftModalOpen(true)}
+              className="inline-flex h-8 items-center gap-1.5 rounded-md bg-neutral-900 px-3 text-xs font-medium text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
+            >
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Open Register Shift
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-col xl:flex-row gap-4 overflow-hidden">
       {/* Left: Medicine List */}
-      <div className="flex-1 rounded-lg border border-border bg-white dark:bg-[#0A0A0A]">
+      <div className="flex-1 h-full rounded-lg border border-border bg-white dark:bg-[#0A0A0A]">
         {/* Search bar + category pills */}
         <div className="border-b border-border p-3 space-y-3">
           <div className="flex items-center gap-2">
@@ -395,7 +492,7 @@ export default function POSPage() {
       </div>
 
       {/* Right: Cart - desktop only */}
-      <div className="hidden xl:flex w-[380px] rounded-lg border border-border bg-white dark:bg-[#0A0A0A] flex-col">
+      <div className="hidden xl:flex w-[380px] h-full rounded-lg border border-border bg-white dark:bg-[#0A0A0A] flex-col">
         <div className="border-b border-border px-4 py-3">
           <h2 className="text-base font-medium">Cart</h2>
         </div>
@@ -777,6 +874,8 @@ export default function POSPage() {
         </div>
       )}
 
+      </div>
+
       {/* Completion Overlay */}
       {completed && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
@@ -834,6 +933,27 @@ export default function POSPage() {
           </div>
         </div>
       )}
+
+      <StartShiftModal
+        isOpen={startShiftModalOpen}
+        cashierName={user?.name ?? "Cashier"}
+        onStartShift={handleStartShift}
+      />
+
+      <CloseShiftModal
+        isOpen={closeShiftModalOpen}
+        onClose={() => setCloseShiftModalOpen(false)}
+        shiftData={{
+          cashierName: user?.name ?? "Cashier",
+          startTime,
+          openingFloat,
+          cashSales,
+          telebirrSales,
+          cardSales,
+          totalTransactions: totalSalesCount,
+        }}
+        onCompleteCloseShift={handleCompleteCloseShift}
+      />
     </div>
   );
 }
