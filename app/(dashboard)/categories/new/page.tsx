@@ -10,6 +10,7 @@ export default function NewCategoryPage() {
   const [form, setForm] = useState({
     name: "",
     slug: "",
+    type: "medicine",
     description: "",
     branch_id: "",
     status: "active",
@@ -32,7 +33,7 @@ export default function NewCategoryPage() {
         </button>
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Add Category</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">Create a new medicine category</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">Create a new product category</p>
         </div>
       </div>
 
@@ -52,6 +53,22 @@ export default function NewCategoryPage() {
                 placeholder="e.g., Pain Relief"
                 className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
               />
+            </div>
+
+            <div>
+              <label htmlFor="type" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                Type
+              </label>
+              <select
+                id="type"
+                required
+                value={form.type}
+                onChange={(e) => setForm({ ...form, type: e.target.value })}
+                className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+              >
+                <option value="medicine">Medicine</option>
+                <option value="cosmetic">Cosmetic</option>
+              </select>
             </div>
 
             <div>

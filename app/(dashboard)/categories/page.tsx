@@ -38,6 +38,20 @@ export default function CategoriesPage() {
       ),
     },
     {
+      key: "type",
+      header: "Type",
+      render: (item: typeof mockCategories[0]) => (
+        <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${
+          item.type === "medicine"
+            ? "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400"
+            : "bg-pink-50 text-pink-700 dark:bg-pink-950 dark:text-pink-400"
+        }`}>
+          {item.type === "medicine" ? "Medicine" : "Cosmetic"}
+        </span>
+      ),
+      hideOnMobile: true,
+    },
+    {
       key: "description",
       header: "Description",
       render: (item: typeof mockCategories[0]) => (
@@ -90,7 +104,7 @@ export default function CategoriesPage() {
     <div className="space-y-4 sm:space-y-6">
       <PageHeader
         title="Categories"
-        subtitle="Manage medicine categories"
+        subtitle="Manage product categories"
         action={{ label: "Add Category", icon: Plus, href: "/categories/new" }}
       />
 

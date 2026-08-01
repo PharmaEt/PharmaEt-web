@@ -2,14 +2,14 @@
 
 import { StatsCard } from "@/components/ui/stats-card";
 import { DataTable } from "@/components/ui/data-table";
-import { mockSales, mockAlerts, mockBranches } from "@/lib/mock-data";
+import { mockDashboardSales, mockAlerts, mockBranches } from "@/lib/mock-data";
 
 const saleColumns = [
   { key: "time", header: "Time" },
   {
     key: "items",
     header: "Items",
-    render: (item: typeof mockSales[0]) => (
+    render: (item: typeof mockDashboardSales[0]) => (
       <span className="text-neutral-500">{item.items} items</span>
     ),
     hideOnMobile: true,
@@ -17,7 +17,7 @@ const saleColumns = [
   {
     key: "total",
     header: "Total",
-    render: (item: typeof mockSales[0]) => (
+    render: (item: typeof mockDashboardSales[0]) => (
       <span className="font-medium">ETB {item.total.toLocaleString()}</span>
     ),
   },
@@ -25,7 +25,7 @@ const saleColumns = [
   {
     key: "served_by",
     header: "Served By",
-    render: (item: typeof mockSales[0]) => (
+    render: (item: typeof mockDashboardSales[0]) => (
       <span className="text-neutral-500">{item.served_by}</span>
     ),
     hideOnMobile: true,
@@ -214,7 +214,7 @@ export default function DashboardPage() {
               View all
             </a>
           </div>
-          <DataTable columns={saleColumns} data={mockSales} />
+          <DataTable columns={saleColumns} data={mockDashboardSales} />
         </div>
       </div>
 
