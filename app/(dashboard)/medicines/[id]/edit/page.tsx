@@ -17,7 +17,6 @@ export default function MedicineEditPage() {
     name: medicine?.name ?? "",
     generic_name: medicine?.generic_name ?? "",
     category_id: medicine?.category_id?.toString() ?? "",
-    branch_id: medicine?.branch_id?.toString() ?? "",
     strength: medicine?.strength ?? "",
     dosage_form: medicine?.dosage_form ?? "",
     pack_size: medicine?.pack_size?.toString() ?? "",
