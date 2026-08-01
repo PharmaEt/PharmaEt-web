@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Eye, Pencil, Trash2, Search } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -90,11 +90,18 @@ export default function CosmeticsPage() {
     {
       key: "actions",
       header: "",
-      className: "w-20",
+      className: "w-24",
       render: (item: typeof mockCosmetics[0]) => (
         <div className="flex items-center gap-1">
           <button
             onClick={() => router.push(`/cosmetics/${item.id}`)}
+            aria-label="View"
+            className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
+          >
+            <Eye className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={() => router.push(`/cosmetics/${item.id}/edit`)}
             aria-label="Edit"
             className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
           >

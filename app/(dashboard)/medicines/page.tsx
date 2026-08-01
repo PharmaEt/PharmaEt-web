@@ -107,7 +107,7 @@ export default function MedicinesPage() {
             <Eye className="h-3.5 w-3.5" />
           </button>
           <button
-            onClick={() => router.push(`/medicines/${item.id}`)}
+            onClick={() => router.push(`/medicines/${item.id}/edit`)}
             aria-label="Edit"
             className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
           >
