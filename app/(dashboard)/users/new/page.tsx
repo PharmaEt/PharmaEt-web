@@ -1,26 +1,62 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { mockBranches } from "@/lib/mock-data";
+import { useToast } from "@/components/ui/toast";
+import { type ApiBranch } from "@/lib/mock-data";
+import { createUser } from "@/lib/api/users";
+import { getBranches } from "@/lib/api/branches";
 
 export default function NewUserPage() {
   const router = useRouter();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [branches, setBranches] = useState<ApiBranch[]>([]);
   const [form, setForm] = useState({
     name: "",
     email: "",
     phone: "",
     password: "",
-    role: "pharmacist",
+    role: "pharmacist" as "owner" | "manager" | "pharmacist" | "cashier" | "inventory_officer",
     branch_id: "",
     telegram_chat_id: "",
-    status: "active",
+    status: "active" as "active" | "inactive",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    async function fetchBranches() {
+      try {
+        const res = await getBranches();
+        setBranches(res.data || []);
+      } catch {
+        // ignore
+      }
+    }
+    fetchBranches();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    router.push("/users");
+    setLoading(true);
+    try {
+      const res = await createUser({
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        password: form.password,
+        role: form.role,
+        branch_id: form.branch_id ? parseInt(form.branch_id) : null,
+        telegram_chat_id: form.telegram_chat_id || null,
+        status: form.status,
+      });
+      toast(res.message || "User created successfully", "success");
+      router.push("/users");
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed to create user", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -74,11 +110,12 @@ export default function NewUserPage() {
 
             <div>
               <label htmlFor="phone" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                Phone <span className="text-neutral-400">(optional)</span>
+                Phone
               </label>
               <input
                 id="phone"
                 type="tel"
+                required
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 placeholder="+251911223344"
@@ -109,8 +146,8 @@ export default function NewUserPage() {
                 <select
                   id="role"
                   value={form.role}
-                  onChange={(e) => setForm({ ...form, role: e.target.value })}
-                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+                  onChange={(e) => setForm({ ...form, role: e.target.value as "owner" | "manager" | "pharmacist" | "cashier" | "inventory_officer" })}
+                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600 dark:bg-neutral-900"
                 >
                   <option value="owner">Owner</option>
                   <option value="manager">Manager</option>
@@ -128,10 +165,10 @@ export default function NewUserPage() {
                   id="branch"
                   value={form.branch_id}
                   onChange={(e) => setForm({ ...form, branch_id: e.target.value })}
-                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600 dark:bg-neutral-900"
                 >
-                  <option value="">Select branch</option>
-                  {mockBranches.map((branch) => (
+                  <option value="">Unassigned (Headquarters / Floating)</option>
+                  {branches.map((branch) => (
                     <option key={branch.id} value={branch.id}>
                       {branch.name}
                     </option>
@@ -158,9 +195,10 @@ export default function NewUserPage() {
           <div className="mt-5 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <button
               type="submit"
-              className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-neutral-700 active:scale-[0.98] dark:bg-white dark:text-black dark:hover:bg-neutral-200"
+              disabled={loading}
+              className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-neutral-700 active:scale-[0.98] disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
             >
-              Create User
+              {loading ? "Creating..." : "Create User"}
             </button>
             <button
               type="button"
