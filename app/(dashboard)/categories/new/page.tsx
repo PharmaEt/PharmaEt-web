@@ -1,24 +1,64 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { mockBranches } from "@/lib/mock-data";
+import { useToast } from "@/components/ui/toast";
+import { type ApiBranch } from "@/lib/mock-data";
+import { createCategory } from "@/lib/api/categories";
+import { getBranches } from "@/lib/api/branches";
 
 export default function NewCategoryPage() {
   const router = useRouter();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [branches, setBranches] = useState<ApiBranch[]>([]);
   const [form, setForm] = useState({
     name: "",
     slug: "",
-    type: "medicine",
+    type: "medicine" as "medicine" | "cosmetic",
     description: "",
     branch_id: "",
-    status: "active",
+    status: "active" as "active" | "inactive",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    async function fetchBranches() {
+      try {
+        const res = await getBranches();
+        setBranches(res.data || []);
+      } catch {
+        // ignore
+      }
+    }
+    fetchBranches();
+  }, []);
+
+  const handleNameChange = (name: string) => {
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    setForm((prev) => ({ ...prev, name, slug: prev.slug ? prev.slug : slug }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    router.push("/categories");
+    setLoading(true);
+    try {
+      const generatedSlug = form.slug || form.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      const res = await createCategory({
+        name: form.name,
+        type: form.type,
+        slug: generatedSlug,
+        description: form.description || null,
+        branch_id: form.branch_id ? parseInt(form.branch_id) : null,
+        status: form.status,
+      });
+      toast(res.message || "Category created successfully", "success");
+      router.push("/categories");
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed to create category", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -49,7 +89,7 @@ export default function NewCategoryPage() {
                 type="text"
                 required
                 value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                onChange={(e) => handleNameChange(e.target.value)}
                 placeholder="e.g., Pain Relief"
                 className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
               />
@@ -63,8 +103,8 @@ export default function NewCategoryPage() {
                 id="type"
                 required
                 value={form.type}
-                onChange={(e) => setForm({ ...form, type: e.target.value })}
-                className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+                onChange={(e) => setForm({ ...form, type: e.target.value as "medicine" | "cosmetic" })}
+                className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600 dark:bg-neutral-900"
               >
                 <option value="medicine">Medicine</option>
                 <option value="cosmetic">Cosmetic</option>
@@ -110,10 +150,10 @@ export default function NewCategoryPage() {
                   id="branch"
                   value={form.branch_id}
                   onChange={(e) => setForm({ ...form, branch_id: e.target.value })}
-                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600 dark:bg-neutral-900"
                 >
-                  <option value="">All branches</option>
-                  {mockBranches.map((branch) => (
+                  <option value="">All branches (Global)</option>
+                  {branches.map((branch) => (
                     <option key={branch.id} value={branch.id}>
                       {branch.name}
                     </option>
@@ -128,8 +168,8 @@ export default function NewCategoryPage() {
                 <select
                   id="status"
                   value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value })}
-                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+                  onChange={(e) => setForm({ ...form, status: e.target.value as "active" | "inactive" })}
+                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600 dark:bg-neutral-900"
                 >
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
@@ -141,9 +181,10 @@ export default function NewCategoryPage() {
           <div className="mt-5 flex items-center gap-3">
             <button
               type="submit"
-              className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-neutral-700 active:scale-[0.98] dark:bg-white dark:text-black dark:hover:bg-neutral-200"
+              disabled={loading}
+              className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-neutral-700 active:scale-[0.98] disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
             >
-              Create Category
+              {loading ? "Creating..." : "Create Category"}
             </button>
             <button
               type="button"
