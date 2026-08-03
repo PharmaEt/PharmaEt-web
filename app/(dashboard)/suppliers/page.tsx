@@ -1,20 +1,53 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Eye, Pencil, Trash2, Search } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/toast";
-import { mockSuppliers } from "@/lib/mock-data";
+import { useAuth } from "@/context/auth-context";
+import { type ApiSupplier } from "@/lib/mock-data";
+import { getSuppliers, deleteSupplier } from "@/lib/api/suppliers";
 
 export default function SuppliersPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { isOwner, canManageCatalog } = useAuth();
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
-  const [suppliers, setSuppliers] = useState(mockSuppliers);
+  const [suppliers, setSuppliers] = useState<ApiSupplier[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchSuppliers = async () => {
+    setIsLoading(true);
+    try {
+      const res = await getSuppliers();
+      setSuppliers(res.data || []);
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed to load suppliers", "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSuppliers();
+  }, []);
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    try {
+      const res = await deleteSupplier(deleteId);
+      toast(res.message || "Supplier deleted successfully", "success");
+      setSuppliers((prev) => prev.filter((s) => s.id !== deleteId));
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed to delete supplier", "error");
+    } finally {
+      setDeleteId(null);
+    }
+  };
 
   const filtered = suppliers.filter(
     (s) =>
@@ -26,15 +59,15 @@ export default function SuppliersPage() {
   const columns = [
     {
       key: "id",
-      header: "ID",
-      render: (item: typeof mockSuppliers[0]) => (
-        <span className="font-medium text-sm">{item.id}</span>
+      header: "#",
+      render: (_: ApiSupplier, index: number) => (
+        <span className="font-medium text-sm text-neutral-500">#{index + 1}</span>
       ),
     },
     {
       key: "name",
       header: "Company",
-      render: (item: typeof mockSuppliers[0]) => (
+      render: (item: ApiSupplier) => (
         <div>
           <p className="text-sm font-medium">{item.name}</p>
           <p className="text-[11px] text-neutral-500">{item.address ?? "—"}</p>
@@ -44,7 +77,7 @@ export default function SuppliersPage() {
     {
       key: "phone",
       header: "Phone",
-      render: (item: typeof mockSuppliers[0]) => (
+      render: (item: ApiSupplier) => (
         <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.phone ?? "—"}</span>
       ),
       hideOnMobile: true,
@@ -52,7 +85,7 @@ export default function SuppliersPage() {
     {
       key: "email",
       header: "Email",
-      render: (item: typeof mockSuppliers[0]) => (
+      render: (item: ApiSupplier) => (
         <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.email ?? "—"}</span>
       ),
       hideOnMobile: true,
@@ -60,7 +93,7 @@ export default function SuppliersPage() {
     {
       key: "contact_person",
       header: "Contact",
-      render: (item: typeof mockSuppliers[0]) => (
+      render: (item: ApiSupplier) => (
         <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.contact_person ?? "—"}</span>
       ),
       hideOnMobile: true,
@@ -69,7 +102,7 @@ export default function SuppliersPage() {
       key: "actions",
       header: "",
       className: "w-24",
-      render: (item: typeof mockSuppliers[0]) => (
+      render: (item: ApiSupplier) => (
         <div className="flex items-center gap-1">
           <button
             onClick={() => router.push(`/suppliers/${item.id}`)}
@@ -78,20 +111,24 @@ export default function SuppliersPage() {
           >
             <Eye className="h-3.5 w-3.5" />
           </button>
-          <button
-            onClick={() => router.push(`/suppliers/${item.id}`)}
-            aria-label="Edit"
-            className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </button>
-          <button
-            onClick={() => setDeleteId(item.id)}
-            aria-label="Delete"
-            className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+          {canManageCatalog && (
+            <button
+              onClick={() => router.push(`/suppliers/${item.id}`)}
+              aria-label="Edit"
+              className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+          )}
+          {isOwner && (
+            <button
+              onClick={() => setDeleteId(item.id)}
+              aria-label="Delete"
+              className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       ),
     },
@@ -102,7 +139,7 @@ export default function SuppliersPage() {
       <PageHeader
         title="Suppliers"
         subtitle="Manage pharmaceutical suppliers"
-        action={{ label: "Add Supplier", icon: Plus, href: "/suppliers/new" }}
+        action={canManageCatalog ? { label: "Add Supplier", icon: Plus, href: "/suppliers/new" } : undefined}
       />
 
       <div className="relative max-w-xs">
@@ -116,17 +153,13 @@ export default function SuppliersPage() {
         />
       </div>
 
-      <DataTable columns={columns} data={filtered} emptyMessage="No suppliers found" />
+      <DataTable columns={columns} data={filtered} emptyMessage={isLoading ? "Loading suppliers..." : "No suppliers found"} />
 
       <ConfirmDialog
         open={deleteId !== null}
         title="Delete supplier?"
         description="This will permanently remove this supplier. This cannot be undone."
-        onConfirm={() => {
-          setSuppliers((prev) => prev.filter((s) => s.id !== deleteId));
-          setDeleteId(null);
-          toast("Supplier deleted successfully");
-        }}
+        onConfirm={handleDelete}
         onCancel={() => setDeleteId(null)}
       />
     </div>

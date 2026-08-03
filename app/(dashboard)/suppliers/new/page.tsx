@@ -3,9 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { useToast } from "@/components/ui/toast";
+import { createSupplier } from "@/lib/api/suppliers";
 
 export default function NewSupplierPage() {
   const router = useRouter();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     name: "",
     contact_person: "",
@@ -15,9 +19,25 @@ export default function NewSupplierPage() {
     telegram_chat_id: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    router.push("/suppliers");
+    setLoading(true);
+    try {
+      const res = await createSupplier({
+        name: form.name,
+        contact_person: form.contact_person || null,
+        email: form.email || null,
+        phone: form.phone || null,
+        address: form.address || null,
+        telegram_chat_id: form.telegram_chat_id || null,
+      });
+      toast(res.message || "Supplier created successfully", "success");
+      router.push("/suppliers");
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed to create supplier", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -56,11 +76,12 @@ export default function NewSupplierPage() {
 
             <div>
               <label htmlFor="contact_person" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                Contact Person <span className="text-neutral-400">(optional)</span>
+                Contact Person
               </label>
               <input
                 id="contact_person"
                 type="text"
+                required
                 value={form.contact_person}
                 onChange={(e) => setForm({ ...form, contact_person: e.target.value })}
                 placeholder="e.g., Yonas Bekele"
@@ -70,11 +91,12 @@ export default function NewSupplierPage() {
 
             <div>
               <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                Email <span className="text-neutral-400">(optional)</span>
+                Email
               </label>
               <input
                 id="email"
                 type="email"
+                required
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 placeholder="e.g., info@ethiopharma.com"
@@ -84,11 +106,12 @@ export default function NewSupplierPage() {
 
             <div>
               <label htmlFor="phone" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                Phone <span className="text-neutral-400">(optional)</span>
+                Phone
               </label>
               <input
                 id="phone"
                 type="tel"
+                required
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 placeholder="+251911000001"
@@ -98,11 +121,12 @@ export default function NewSupplierPage() {
 
             <div>
               <label htmlFor="address" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                Address <span className="text-neutral-400">(optional)</span>
+                Address
               </label>
               <input
                 id="address"
                 type="text"
+                required
                 value={form.address}
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
                 placeholder="e.g., Addis Ababa, Bole"
@@ -112,14 +136,15 @@ export default function NewSupplierPage() {
 
             <div>
               <label htmlFor="telegram" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                Telegram Chat ID <span className="text-neutral-400">(optional)</span>
+                Telegram Chat ID
               </label>
               <input
                 id="telegram"
                 type="text"
+                required
                 value={form.telegram_chat_id}
                 onChange={(e) => setForm({ ...form, telegram_chat_id: e.target.value })}
-                placeholder="Optional"
+                placeholder="e.g., 1106118198"
                 className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
               />
             </div>
@@ -128,9 +153,10 @@ export default function NewSupplierPage() {
           <div className="mt-5 flex items-center gap-3">
             <button
               type="submit"
-              className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-neutral-700 active:scale-[0.98] dark:bg-white dark:text-black dark:hover:bg-neutral-200"
+              disabled={loading}
+              className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-neutral-700 active:scale-[0.98] disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
             >
-              Create Supplier
+              {loading ? "Creating..." : "Create Supplier"}
             </button>
             <button
               type="button"
