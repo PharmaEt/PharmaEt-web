@@ -1,36 +1,63 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Eye, Send, Truck, XCircle } from "lucide-react";
+import { Plus, Search, Eye, Send, PackageCheck, XCircle } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/toast";
-import { mockPurchaseOrders } from "@/lib/mock-data";
-import type { ApiPurchaseOrder } from "@/lib/mock-data";
+import { getPurchaseOrders, cancelPurchaseOrder, type ApiPurchaseOrder } from "@/lib/api/purchase-orders";
+import { formatDate } from "@/lib/utils";
 
 export default function PurchaseOrdersPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [pos, setPos] = useState(mockPurchaseOrders);
+  const [pos, setPos] = useState<ApiPurchaseOrder[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [isLoading, setIsLoading] = useState(true);
   const [cancelId, setCancelId] = useState<number | null>(null);
 
-  const filtered = pos.filter((po) => {
-    const matchesSearch = po.supplier.name.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === "all" || po.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const fetchOrders = async () => {
+    setIsLoading(true);
+    try {
+      const res = await getPurchaseOrders({
+        search: search || undefined,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+      });
+      const list = Array.isArray(res.data) ? res.data : (res.data as any)?.data || [];
+      setPos(list);
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed to load purchase orders", "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, [search, statusFilter]);
+
+  const handleCancel = async () => {
+    if (!cancelId) return;
+    try {
+      await cancelPurchaseOrder(cancelId);
+      toast("Purchase order cancelled successfully", "success");
+      fetchOrders();
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed to cancel purchase order", "error");
+    } finally {
+      setCancelId(null);
+    }
+  };
 
   const statusConfig: Record<string, { label: string; className: string }> = {
     draft: { label: "Draft", className: "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400" },
-    pending: { label: "Pending", className: "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400" },
     ordered: { label: "Ordered", className: "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400" },
-    partially_received: { label: "Partially Received", className: "bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-400" },
+    partially_received: { label: "Partially Received", className: "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400" },
     received: { label: "Received", className: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400" },
-    cancelled: { label: "Cancelled", className: "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400" },
+    cancelled: { label: "Cancelled", className: "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400" },
   };
 
   const columns = [
@@ -38,21 +65,21 @@ export default function PurchaseOrdersPage() {
       key: "id",
       header: "PO Number",
       render: (item: ApiPurchaseOrder) => (
-        <span className="font-medium text-sm">PO-{String(item.id).padStart(3, "0")}</span>
+        <span className="font-medium text-sm font-mono">{item.order_number || `PO-${String(item.id).padStart(3, "0")}`}</span>
       ),
     },
     {
       key: "supplier",
       header: "Supplier",
       render: (item: ApiPurchaseOrder) => (
-        <span className="text-sm">{item.supplier.name}</span>
+        <span className="text-sm font-medium">{item.supplier?.name ?? "—"}</span>
       ),
     },
     {
       key: "date",
       header: "Date",
       render: (item: ApiPurchaseOrder) => (
-        <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.order_date}</span>
+        <span className="text-sm text-neutral-600 dark:text-neutral-400">{formatDate(item.order_date || item.created_at)}</span>
       ),
       hideOnMobile: true,
     },
@@ -60,7 +87,7 @@ export default function PurchaseOrdersPage() {
       key: "items",
       header: "Items",
       render: (item: ApiPurchaseOrder) => (
-        <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.items.length}</span>
+        <span className="text-sm text-neutral-600 dark:text-neutral-400">{(item.items || []).length} items</span>
       ),
       hideOnMobile: true,
     },
@@ -68,9 +95,13 @@ export default function PurchaseOrdersPage() {
       key: "total",
       header: "Total",
       render: (item: ApiPurchaseOrder) => {
-        const total = item.items.reduce((sum, i) => sum + i.total_cost, 0);
+        const total = (item.items || []).reduce(
+          (sum, i) => sum + (i.quantity_pack || 0) * (parseFloat(String(i.cost_per_pack)) || 0),
+          0
+        );
+        const displayTotal = item.total_amount ? parseFloat(String(item.total_amount)) : total;
         return (
-          <span className="font-medium text-sm">{total.toLocaleString()} ETB</span>
+          <span className="font-medium text-sm">ETB {(isNaN(displayTotal) ? 0 : displayTotal).toLocaleString()}</span>
         );
       },
     },
@@ -78,7 +109,7 @@ export default function PurchaseOrdersPage() {
       key: "status",
       header: "Status",
       render: (item: ApiPurchaseOrder) => {
-        const config = statusConfig[item.status] || statusConfig.pending;
+        const config = statusConfig[item.status] || statusConfig.draft;
         return (
           <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${config.className}`}>
             {config.label}
@@ -96,7 +127,7 @@ export default function PurchaseOrdersPage() {
             onClick={() => router.push(`/purchase-orders/${item.id}`)}
             aria-label="View"
             className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
-            title="View"
+            title="View Details"
           >
             <Eye className="h-3.5 w-3.5" />
           </button>
@@ -105,8 +136,8 @@ export default function PurchaseOrdersPage() {
             <button
               onClick={() => router.push(`/purchase-orders/${item.id}`)}
               aria-label="Send Order"
-              className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950"
-              title="Send Order"
+              className="flex h-8 w-8 items-center justify-center rounded-md text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950"
+              title="Send Order to Supplier"
             >
               <Send className="h-3.5 w-3.5" />
             </button>
@@ -116,19 +147,19 @@ export default function PurchaseOrdersPage() {
             <button
               onClick={() => router.push(`/purchase-orders/${item.id}/receive`)}
               aria-label="Receive"
-              className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950"
-              title="Delivery Track"
+              className="flex h-8 w-8 items-center justify-center rounded-md text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950"
+              title="Receive Delivery"
             >
-              <Truck className="h-3.5 w-3.5" />
+              <PackageCheck className="h-3.5 w-3.5" />
             </button>
           )}
 
-          {item.status !== "received" && item.status !== "cancelled" && (
+          {item.status === "draft" && (
             <button
               onClick={() => setCancelId(item.id)}
               aria-label="Cancel"
-              className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
-              title="Cancel"
+              className="flex h-8 w-8 items-center justify-center rounded-md text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+              title="Cancel Order"
             >
               <XCircle className="h-3.5 w-3.5" />
             </button>
@@ -142,7 +173,7 @@ export default function PurchaseOrdersPage() {
     <div className="space-y-4 sm:space-y-6">
       <PageHeader
         title="Purchase Orders"
-        subtitle="Manage supplier orders"
+        subtitle="Manage supplier purchase orders and stock intakes"
         action={{ label: "New Order", icon: Plus, href: "/purchase-orders/new" }}
       />
 
@@ -167,20 +198,19 @@ export default function PurchaseOrdersPage() {
           <option value="ordered">Ordered</option>
           <option value="partially_received">Partially Received</option>
           <option value="received">Received</option>
+          <option value="cancelled">Cancelled</option>
         </select>
       </div>
 
-      <DataTable columns={columns} data={filtered} emptyMessage="No purchase orders found" />
+      <DataTable columns={columns} data={pos} emptyMessage="No purchase orders found" />
 
       <ConfirmDialog
         open={cancelId !== null}
         title="Cancel purchase order?"
-        description="This will cancel the purchase order. This action cannot be undone."
-        onConfirm={() => {
-          setPos((prev) => prev.map((po) => po.id === cancelId ? { ...po, status: "cancelled" as const } : po));
-          setCancelId(null);
-          toast("Purchase order cancelled");
-        }}
+        description="This will cancel the purchase order and notify the supplier via Telegram if ordered. This action cannot be undone."
+        variant="danger"
+        confirmLabel="Cancel Order"
+        onConfirm={handleCancel}
         onCancel={() => setCancelId(null)}
       />
     </div>
