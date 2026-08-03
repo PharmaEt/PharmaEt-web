@@ -3,7 +3,7 @@ import { ReactNode } from "react";
 interface Column<T> {
   key: string;
   header: string;
-  render?: (item: T) => ReactNode;
+  render?: (item: T, index: number) => ReactNode;
   className?: string;
   hideOnMobile?: boolean;
 }
@@ -88,7 +88,7 @@ export function DataTable<T extends { id: number }>({
             >
               {columns.map((col) => (
                 <td key={col.key} className={`px-3 sm:px-4 py-3 text-sm whitespace-nowrap ${col.hideOnMobile ? "hidden lg:table-cell" : ""} ${col.className || ""}`}>
-                  {col.render ? col.render(item) : String((item as Record<string, unknown>)[col.key])}
+                  {col.render ? col.render(item, index) : String((item as Record<string, unknown>)[col.key])}
                 </td>
               ))}
             </tr>

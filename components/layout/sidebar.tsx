@@ -21,6 +21,7 @@ import {
   Settings,
   User,
   LogOut,
+  Clock,
 } from "lucide-react";
 import { LucideIcon } from "lucide-react";
 
@@ -56,6 +57,7 @@ const navSections: NavSection[] = [
       { label: "Stock", href: "/stock", icon: Package },
       { label: "Stock Alerts", href: "/stock#alerts", icon: AlertTriangle },
       { label: "Stock Movements", href: "/stock-movements", icon: ArrowLeftRight },
+      { label: "Stock Transfers", href: "/stock-transfers", icon: ArrowLeftRight },
       { label: "Purchase Orders", href: "/purchase-orders", icon: ClipboardList },
     ],
   },
@@ -64,6 +66,7 @@ const navSections: NavSection[] = [
     items: [
       { label: "POS", href: "/pos", icon: ShoppingCart },
       { label: "Sales History", href: "/sales", icon: Receipt },
+      { label: "Register Shifts", href: "/sales/shifts", icon: Clock },
     ],
   },
   {
@@ -102,10 +105,23 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         <nav className="flex-1 overflow-y-auto px-3 pb-4">
           {navSections.map((section) => {
             const filteredItems = section.items.filter((item) => {
-              if (item.href === "/branches") return isOwner;
-              if (item.href === "/users") return canManageUsers;
-              if (item.href === "/purchase-orders") return canManageCatalog;
-              return true;
+              const role = user?.role ?? "cashier";
+              if (role === "owner") return true;
+              if (item.href === "/branches" || item.href === "/settings") return false;
+
+              if (role === "cashier") {
+                return ["/", "/pos", "/sales", "/sales/shifts"].includes(item.href);
+              }
+              if (role === "pharmacist") {
+                return ["/", "/pos", "/sales", "/sales/shifts", "/medicines", "/cosmetics", "/categories", "/stock", "/stock#alerts"].includes(item.href);
+              }
+              if (role === "inventory_officer") {
+                return ["/", "/stock", "/stock#alerts", "/stock-movements", "/purchase-orders", "/medicines", "/cosmetics", "/suppliers", "/categories"].includes(item.href);
+              }
+              if (role === "manager") {
+                return true;
+              }
+              return false;
             });
 
             if (filteredItems.length === 0) return null;
@@ -150,17 +166,19 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             <User className="h-4 w-4" />
             Profile
           </Link>
-          <Link
-            href="/settings"
-            onClick={onClose}
-            className={`mb-0.5 flex items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors duration-100 ${pathname === "/settings"
-              ? "bg-white/10 text-white"
-              : "text-neutral-400 hover:bg-white/5 hover:text-neutral-100"
-              }`}
-          >
-            <Settings className="h-4 w-4" />
-            Settings
-          </Link>
+          {isOwner && (
+            <Link
+              href="/settings"
+              onClick={onClose}
+              className={`mb-0.5 flex items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors duration-100 ${pathname === "/settings"
+                ? "bg-white/10 text-white"
+                : "text-neutral-400 hover:bg-white/5 hover:text-neutral-100"
+                }`}
+            >
+              <Settings className="h-4 w-4" />
+              Settings
+            </Link>
+          )}
           <button
             onClick={logout}
             className="mt-2 flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-xs text-neutral-500 transition-colors hover:bg-white/5 hover:text-neutral-300"

@@ -30,7 +30,7 @@ const pageTitles: Record<string, string> = {
 
 export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
   const pathname = usePathname();
-  const { user, logout, switchRole } = useAuth();
+  const { user, logout, isOwner } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const getBreadcrumbs = () => {
@@ -101,20 +101,11 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
       </div>
 
       <div className="flex items-center gap-2.5">
-        {/* Role Switcher Badge */}
-        <div className="flex items-center gap-1.5 rounded-md border border-neutral-200 bg-neutral-50 px-2 py-1 text-xs dark:border-neutral-800 dark:bg-neutral-900">
+        <div className="flex items-center gap-1.5 rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-medium dark:border-neutral-800 dark:bg-neutral-900">
           <Shield className="h-3.5 w-3.5 text-neutral-500" />
-          <select
-            value={user?.role ?? "owner"}
-            onChange={(e) => switchRole(e.target.value as UserRole)}
-            className="bg-transparent font-medium capitalize text-neutral-800 focus:outline-none dark:text-neutral-200 cursor-pointer"
-          >
-            <option value="owner">Role: Owner</option>
-            <option value="manager">Role: Manager</option>
-            <option value="pharmacist">Role: Pharmacist</option>
-            <option value="cashier">Role: Cashier</option>
-            <option value="inventory_officer">Role: Inventory Officer</option>
-          </select>
+          <span className="capitalize text-neutral-800 dark:text-neutral-200">
+            {user?.role ? user.role.replace("_", " ") : "Guest"}
+          </span>
         </div>
 
         <div className="relative">
@@ -150,13 +141,15 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
                   >
                     Profile
                   </Link>
-                  <Link
-                    href="/settings"
-                    onClick={() => setDropdownOpen(false)}
-                    className="flex w-full items-center rounded-md px-3 py-2 text-[13px] text-neutral-600 transition-colors duration-150 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
-                  >
-                    Settings
-                  </Link>
+                  {isOwner && (
+                    <Link
+                      href="/settings"
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex w-full items-center rounded-md px-3 py-2 text-[13px] text-neutral-600 transition-colors duration-150 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                    >
+                      Settings
+                    </Link>
+                  )}
                   <div className="my-1 border-t border-neutral-200 dark:border-neutral-800" />
                   <button
                     onClick={() => {
