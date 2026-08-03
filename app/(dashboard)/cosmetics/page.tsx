@@ -1,26 +1,69 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Eye, Pencil, Trash2, Search } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/toast";
-import { mockCosmetics, mockCategories } from "@/lib/mock-data";
+import { useAuth } from "@/context/auth-context";
+import { type ApiProduct, type ApiCategory } from "@/lib/mock-data";
+import { getCosmetics, deleteCosmetic } from "@/lib/api/cosmetics";
+import { getCategories } from "@/lib/api/categories";
 
 export default function CosmeticsPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { isOwner, canManageCatalog } = useAuth();
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [cosmetics, setCosmetics] = useState(mockCosmetics);
+  const [cosmetics, setCosmetics] = useState<ApiProduct[]>([]);
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchCosmetics = async () => {
+    setIsLoading(true);
+    try {
+      const [cosRes, catRes] = await Promise.all([
+        getCosmetics({ search, category_id: categoryFilter !== "all" ? categoryFilter : undefined }),
+        getCategories({ type: "cosmetic" }).catch(() => ({ data: [] })),
+      ]);
+      setCosmetics(cosRes.data || []);
+      if (catRes.data) {
+        setCategories(catRes.data.filter((c) => c.type === "cosmetic"));
+      }
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed to load cosmetics catalog", "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCosmetics();
+  }, [categoryFilter]);
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    try {
+      const res = await deleteCosmetic(deleteId);
+      toast(res.message || "Cosmetic deleted successfully", "success");
+      setCosmetics((prev) => prev.filter((c) => c.id !== deleteId));
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed to delete cosmetic", "error");
+    } finally {
+      setDeleteId(null);
+    }
+  };
 
   const filtered = cosmetics.filter((c) => {
+    const cosmeticDetails = c.productable as { product_type?: string; sku?: string } | undefined;
     const matchesSearch =
       c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.sku.toLowerCase().includes(search.toLowerCase());
+      (c.sku ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      (cosmeticDetails?.product_type ?? "").toLowerCase().includes(search.toLowerCase());
     const matchesCategory = categoryFilter === "all" || String(c.category_id) === categoryFilter;
     return matchesSearch && matchesCategory;
   });
@@ -28,70 +71,68 @@ export default function CosmeticsPage() {
   const columns = [
     {
       key: "id",
-      header: "ID",
-      render: (item: typeof mockCosmetics[0]) => (
-        <span className="font-medium text-sm">{item.id}</span>
+      header: "#",
+      render: (_: ApiProduct, index: number) => (
+        <span className="font-medium text-sm text-neutral-500">#{index + 1}</span>
       ),
     },
     {
       key: "name",
-      header: "Name",
-      render: (item: typeof mockCosmetics[0]) => (
+      header: "Cosmetic",
+      render: (item: ApiProduct) => (
         <span className="text-sm font-medium">{item.name}</span>
       ),
     },
     {
       key: "product_type",
       header: "Type",
-      render: (item: typeof mockCosmetics[0]) => (
-        <span className="inline-flex items-center rounded bg-neutral-100 px-1.5 py-0.5 text-xs font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
-          {item.product_type}
-        </span>
-      ),
+      render: (item: ApiProduct) => {
+        const cosmeticDetails = item.productable as { product_type?: string } | undefined;
+        return (
+          <span className="inline-flex items-center rounded bg-neutral-100 px-1.5 py-0.5 text-xs font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+            {cosmeticDetails?.product_type || "Cosmetic"}
+          </span>
+        );
+      },
       hideOnMobile: true,
     },
     {
       key: "sku",
       header: "SKU",
-      render: (item: typeof mockCosmetics[0]) => (
-        <span className="text-sm text-neutral-600 dark:text-neutral-400 font-mono">{item.sku}</span>
+      render: (item: ApiProduct) => (
+        <span className="text-sm text-neutral-600 dark:text-neutral-400 font-mono">{item.sku || "—"}</span>
       ),
       hideOnMobile: true,
     },
     {
       key: "category",
       header: "Category",
-      render: (item: typeof mockCosmetics[0]) => {
-        const cat = item.category ?? mockCategories.find((c) => c.id === item.category_id);
-        return <span className="text-sm text-neutral-600 dark:text-neutral-400">{cat?.name ?? "—"}</span>;
-      },
-      hideOnMobile: true,
-    },
-    {
-      key: "pack_price",
-      header: "Price",
-      render: (item: typeof mockCosmetics[0]) => (
-        <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.pack_price.toLocaleString()} ETB</span>
+      render: (item: ApiProduct) => (
+        <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.category?.name ?? "—"}</span>
       ),
       hideOnMobile: true,
     },
     {
-      key: "current_stock",
-      header: "Stock",
-      render: (item: typeof mockCosmetics[0]) => {
-        const isLow = item.current_stock <= item.min_stock_alert;
-        return (
-          <span className={`text-sm font-medium ${isLow ? "text-red-600 dark:text-red-400" : ""}`}>
-            {item.current_stock}
-          </span>
-        );
-      },
+      key: "pack_size",
+      header: "Pack Size",
+      render: (item: ApiProduct) => (
+        <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.pack_size ?? 1}</span>
+      ),
+      hideOnMobile: true,
+    },
+    {
+      key: "min_stock_alert",
+      header: "Min Alert",
+      render: (item: ApiProduct) => (
+        <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.min_stock_alert ?? 10}</span>
+      ),
+      hideOnMobile: true,
     },
     {
       key: "actions",
       header: "",
       className: "w-24",
-      render: (item: typeof mockCosmetics[0]) => (
+      render: (item: ApiProduct) => (
         <div className="flex items-center gap-1">
           <button
             onClick={() => router.push(`/cosmetics/${item.id}`)}
@@ -100,20 +141,24 @@ export default function CosmeticsPage() {
           >
             <Eye className="h-3.5 w-3.5" />
           </button>
-          <button
-            onClick={() => router.push(`/cosmetics/${item.id}/edit`)}
-            aria-label="Edit"
-            className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </button>
-          <button
-            onClick={() => setDeleteId(item.id)}
-            aria-label="Delete"
-            className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+          {canManageCatalog && (
+            <button
+              onClick={() => router.push(`/cosmetics/${item.id}`)}
+              aria-label="Edit"
+              className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+          )}
+          {isOwner && (
+            <button
+              onClick={() => setDeleteId(item.id)}
+              aria-label="Delete"
+              className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       ),
     },
@@ -124,7 +169,7 @@ export default function CosmeticsPage() {
       <PageHeader
         title="Cosmetics"
         subtitle="Manage cosmetic and beauty products"
-        action={{ label: "Add Cosmetic", icon: Plus, href: "/cosmetics/new" }}
+        action={canManageCatalog ? { label: "Add Cosmetic", icon: Plus, href: "/cosmetics/new" } : undefined}
       />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -141,26 +186,22 @@ export default function CosmeticsPage() {
         <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
-          className="flex h-9 w-full sm:w-auto rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+          className="flex h-9 w-full sm:w-auto rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600 dark:bg-neutral-900"
         >
-          <option value="all">All Categories</option>
-          {mockCategories.map((c) => (
+          <option value="all">All Cosmetic Categories</option>
+          {categories.map((c) => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </select>
       </div>
 
-      <DataTable columns={columns} data={filtered} emptyMessage="No cosmetics found" />
+      <DataTable columns={columns} data={filtered} emptyMessage={isLoading ? "Loading cosmetics catalog..." : "No cosmetics found"} />
 
       <ConfirmDialog
         open={deleteId !== null}
         title="Delete cosmetic?"
         description="This will permanently remove this cosmetic from inventory."
-        onConfirm={() => {
-          setCosmetics((prev) => prev.filter((c) => c.id !== deleteId));
-          setDeleteId(null);
-          toast("Cosmetic deleted successfully");
-        }}
+        onConfirm={handleDelete}
         onCancel={() => setDeleteId(null)}
       />
     </div>

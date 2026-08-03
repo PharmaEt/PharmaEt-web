@@ -1,60 +1,112 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { mockCosmetics, mockCategories, mockBranches } from "@/lib/mock-data";
 import { useToast } from "@/components/ui/toast";
+import { getCategories } from "@/lib/api/categories";
+import { getCosmetic, updateCosmetic } from "@/lib/api/cosmetics";
+import type { ApiCategory, ApiProduct } from "@/lib/mock-data";
 
 export default function CosmeticEditPage() {
   const router = useRouter();
   const params = useParams();
   const { toast } = useToast();
-  const cosmetic = mockCosmetics.find((c) => c.id === Number(params.id));
+
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
+  const [cosmetic, setCosmetic] = useState<ApiProduct | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [form, setForm] = useState({
-    name: cosmetic?.name ?? "",
-    category_id: cosmetic?.category_id?.toString() ?? "",
-    branch_id: cosmetic?.branch_id?.toString() ?? "",
-    product_type: cosmetic?.product_type ?? "",
-    sku: cosmetic?.sku ?? "",
-    barcode: cosmetic?.barcode ?? "",
-    pack_price: cosmetic?.pack_price?.toString() ?? "",
-    unit_price: cosmetic?.unit_price?.toString() ?? "",
-    size: cosmetic?.size ?? "",
-    unit: cosmetic?.unit ?? "",
-    color: cosmetic?.color ?? "",
-    shade: cosmetic?.shade ?? "",
-    min_stock_alert: cosmetic?.min_stock_alert?.toString() ?? "",
-    ingredients: cosmetic?.ingredients ?? "",
-    description: cosmetic?.description ?? "",
-    status: cosmetic?.status ?? "active",
+    name: "",
+    category_id: "",
+    product_type: "",
+    sku: "",
+    barcode: "",
+    size: "",
+    unit: "",
+    color: "",
+    shade: "",
+    min_stock_alert: "",
+    ingredients: "",
+    description: "",
+    status: "active" as "active" | "inactive",
   });
 
-  if (!cosmetic) {
-    return (
-      <div className="space-y-4 sm:space-y-6">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.back()}
-            aria-label="Go back"
-            className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Cosmetic Not Found</h1>
-            <p className="mt-0.5 text-sm text-muted-foreground">The requested cosmetic does not exist</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    async function loadData() {
+      setIsLoading(true);
+      try {
+        const [catRes, cosRes] = await Promise.all([
+          getCategories(),
+          getCosmetic(params.id as string),
+        ]);
+        const catList = Array.isArray(catRes.data) ? catRes.data : (catRes.data as any)?.data || [];
+        setCategories(catList);
 
-  const handleSubmit = (e: React.FormEvent) => {
+        const cos = cosRes.data;
+        setCosmetic(cos);
+        const details = (cos.productable as any) || (cos as any).details || {};
+
+        setForm({
+          name: cos.name ?? "",
+          category_id: cos.category_id ? String(cos.category_id) : "",
+          product_type: details.product_type ?? "",
+          sku: cos.sku ?? "",
+          barcode: cos.barcode ?? "",
+          size: details.size ?? "",
+          unit: details.unit ?? "",
+          color: details.color ?? "",
+          shade: details.shade ?? "",
+          min_stock_alert: cos.min_stock_alert ? String(cos.min_stock_alert) : "10",
+          ingredients: details.ingredients ?? "",
+          description: cos.description ?? "",
+          status: cos.status ?? "active",
+        });
+      } catch (err: unknown) {
+        toast(err instanceof Error ? err.message : "Failed to load cosmetic details", "error");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    if (params.id) {
+      loadData();
+    }
+  }, [params.id]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast("Cosmetic updated successfully");
-    router.push("/cosmetics");
+    if (!form.category_id) {
+      toast("Please select a category", "error");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await updateCosmetic(params.id as string, {
+        name: form.name,
+        category_id: Number(form.category_id),
+        product_type: form.product_type || undefined,
+        sku: form.sku || undefined,
+        barcode: form.barcode || undefined,
+        size: form.size || undefined,
+        unit: form.unit || undefined,
+        color: form.color || undefined,
+        shade: form.shade || undefined,
+        min_stock_alert: form.min_stock_alert ? Number(form.min_stock_alert) : undefined,
+        ingredients: form.ingredients || undefined,
+        description: form.description || undefined,
+        status: form.status,
+      });
+      toast("Cosmetic updated successfully", "success");
+      router.push("/cosmetics");
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed to update cosmetic", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -103,7 +155,7 @@ export default function CosmeticEditPage() {
                   className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
                 >
                   <option value="" disabled>Select category</option>
-                  {mockCategories.map((c) => (
+                  {categories.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
@@ -158,40 +210,6 @@ export default function CosmeticEditPage() {
                   value={form.barcode}
                   onChange={(e) => setForm({ ...form, barcode: e.target.value })}
                   className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600 font-mono"
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label htmlFor="pack_price" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Pack Price (ETB)
-                </label>
-                <input
-                  id="pack_price"
-                  type="number"
-                  required
-                  min="0"
-                  step="0.01"
-                  value={form.pack_price}
-                  onChange={(e) => setForm({ ...form, pack_price: e.target.value })}
-                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="unit_price" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Unit Price (ETB)
-                </label>
-                <input
-                  id="unit_price"
-                  type="number"
-                  required
-                  min="0"
-                  step="0.01"
-                  value={form.unit_price}
-                  onChange={(e) => setForm({ ...form, unit_price: e.target.value })}
-                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
                 />
               </div>
             </div>

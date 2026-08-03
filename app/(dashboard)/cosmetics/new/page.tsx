@@ -1,41 +1,91 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { mockCategories, mockBranches } from "@/lib/mock-data";
 import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/context/auth-context";
+import { createCosmetic } from "@/lib/api/cosmetics";
+import { getCategories } from "@/lib/api/categories";
+import { getBranches } from "@/lib/api/branches";
+import { type ApiCategory, type ApiBranch } from "@/lib/mock-data";
 
 export default function NewCosmeticPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { user } = useAuth();
-  const isOwner = user?.role === "owner";
+  const { isOwner, user } = useAuth();
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
+  const [branches, setBranches] = useState<ApiBranch[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [form, setForm] = useState({
     name: "",
     category_id: "",
-    branch_id: isOwner ? "" : (user?.branch_id?.toString() ?? ""),
+    branch_id: "",
     sku: "",
     barcode: "",
     pack_size: "1",
-    pack_price: "",
-    unit_price: "",
+    min_stock_alert: "10",
     description: "",
-    min_stock_alert: "30",
     status: "active",
-    product_type: "",
+    product_type: "Skincare",
     size: "",
-    unit: "",
+    unit: "item",
     color: "",
     shade: "",
     ingredients: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    async function loadLookups() {
+      try {
+        const [catRes, branchRes] = await Promise.all([
+          getCategories({ type: "cosmetic" }).catch(() => ({ data: [] })),
+          getBranches().catch(() => ({ data: [] })),
+        ]);
+        setCategories((catRes.data || []).filter((c) => c.type === "cosmetic"));
+        setBranches(branchRes.data || []);
+      } catch (err: unknown) {
+        toast(err instanceof Error ? err.message : "Failed to load form lookups", "error");
+      }
+    }
+    loadLookups();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast("Cosmetic added successfully");
-    router.push("/cosmetics");
+    if (!form.name || !form.category_id) {
+      toast("Please fill in all required fields", "error");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await createCosmetic({
+        name: form.name,
+        category_id: Number(form.category_id),
+        product_type: form.product_type || null,
+        size: form.size || null,
+        unit: form.unit || "item",
+        color: form.color || null,
+        shade: form.shade || null,
+        ingredients: form.ingredients || null,
+        branch_id: isOwner ? (form.branch_id ? Number(form.branch_id) : null) : (user?.branch_id ?? null),
+        pack_size: Number(form.pack_size) || 1,
+        min_stock_alert: Number(form.min_stock_alert) || 10,
+        sku: form.sku || null,
+        barcode: form.barcode || null,
+        description: form.description || null,
+        status: form.status as "active" | "inactive",
+      });
+
+      toast("Cosmetic created successfully", "success");
+      router.push("/cosmetics");
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed to create cosmetic", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -82,10 +132,10 @@ export default function NewCosmeticPage() {
                   required
                   value={form.category_id}
                   onChange={(e) => setForm({ ...form, category_id: e.target.value })}
-                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600 dark:bg-neutral-900"
                 >
-                  <option value="" disabled>Select category</option>
-                  {mockCategories.map((c) => (
+                  <option value="">Select category</option>
+                  {categories.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
@@ -97,12 +147,12 @@ export default function NewCosmeticPage() {
                 </label>
                 <select
                   id="product_type"
-                  required
                   value={form.product_type}
                   onChange={(e) => setForm({ ...form, product_type: e.target.value })}
-                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600 dark:bg-neutral-900"
                 >
-                  <option value="" disabled>Select type</option>
+                  <option value="Skincare">Skincare</option>
+                  <option value="Haircare">Haircare</option>
                   <option value="Cream">Cream</option>
                   <option value="Lotion">Lotion</option>
                   <option value="Shampoo">Shampoo</option>
@@ -118,17 +168,16 @@ export default function NewCosmeticPage() {
             {isOwner && (
               <div>
                 <label htmlFor="branch" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Branch
+                  Branch Assignment
                 </label>
                 <select
                   id="branch"
-                  required
                   value={form.branch_id}
                   onChange={(e) => setForm({ ...form, branch_id: e.target.value })}
-                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600 dark:bg-neutral-900"
                 >
-                  <option value="" disabled>Select branch</option>
-                  {mockBranches.map((b) => (
+                  <option value="">Global / All Branches</option>
+                  {branches.map((b) => (
                     <option key={b.id} value={b.id}>{b.name}</option>
                   ))}
                 </select>
@@ -143,7 +192,6 @@ export default function NewCosmeticPage() {
                 <input
                   id="sku"
                   type="text"
-                  required
                   value={form.sku}
                   onChange={(e) => setForm({ ...form, sku: e.target.value })}
                   placeholder="e.g., NIVEA-SOFT-100"
@@ -153,7 +201,7 @@ export default function NewCosmeticPage() {
 
               <div>
                 <label htmlFor="barcode" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Barcode <span className="text-neutral-400">(optional)</span>
+                  Barcode
                 </label>
                 <input
                   id="barcode"
@@ -168,44 +216,8 @@ export default function NewCosmeticPage() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label htmlFor="pack_price" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Pack Price (ETB)
-                </label>
-                <input
-                  id="pack_price"
-                  type="number"
-                  required
-                  min="0"
-                  step="0.01"
-                  value={form.pack_price}
-                  onChange={(e) => setForm({ ...form, pack_price: e.target.value })}
-                  placeholder="e.g., 350"
-                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="unit_price" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Unit Price (ETB)
-                </label>
-                <input
-                  id="unit_price"
-                  type="number"
-                  required
-                  min="0"
-                  step="0.01"
-                  value={form.unit_price}
-                  onChange={(e) => setForm({ ...form, unit_price: e.target.value })}
-                  placeholder="e.g., 350"
-                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
                 <label htmlFor="size" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Size <span className="text-neutral-400">(optional)</span>
+                  Size
                 </label>
                 <input
                   id="size"
@@ -219,14 +231,14 @@ export default function NewCosmeticPage() {
 
               <div>
                 <label htmlFor="unit" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Unit <span className="text-neutral-400">(optional)</span>
+                  Unit
                 </label>
                 <input
                   id="unit"
                   type="text"
                   value={form.unit}
                   onChange={(e) => setForm({ ...form, unit: e.target.value })}
-                  placeholder="e.g., tube, bottle"
+                  placeholder="e.g., tube, bottle, item"
                   className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
                 />
               </div>
@@ -235,7 +247,7 @@ export default function NewCosmeticPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label htmlFor="color" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Color <span className="text-neutral-400">(optional)</span>
+                  Color
                 </label>
                 <input
                   id="color"
@@ -249,7 +261,7 @@ export default function NewCosmeticPage() {
 
               <div>
                 <label htmlFor="shade" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Shade <span className="text-neutral-400">(optional)</span>
+                  Shade
                 </label>
                 <input
                   id="shade"
@@ -262,9 +274,41 @@ export default function NewCosmeticPage() {
               </div>
             </div>
 
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="pack_size" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  Pack Size
+                </label>
+                <input
+                  id="pack_size"
+                  type="number"
+                  min="1"
+                  value={form.pack_size}
+                  onChange={(e) => setForm({ ...form, pack_size: e.target.value })}
+                  placeholder="1"
+                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="min_stock_alert" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  Min Stock Alert
+                </label>
+                <input
+                  id="min_stock_alert"
+                  type="number"
+                  min="0"
+                  value={form.min_stock_alert}
+                  onChange={(e) => setForm({ ...form, min_stock_alert: e.target.value })}
+                  placeholder="10"
+                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+                />
+              </div>
+            </div>
+
             <div>
               <label htmlFor="ingredients" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                Ingredients <span className="text-neutral-400">(optional)</span>
+                Ingredients
               </label>
               <textarea
                 id="ingredients"
@@ -278,7 +322,7 @@ export default function NewCosmeticPage() {
 
             <div>
               <label htmlFor="description" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                Description <span className="text-neutral-400">(optional)</span>
+                Description
               </label>
               <textarea
                 id="description"
@@ -289,30 +333,15 @@ export default function NewCosmeticPage() {
                 className="flex w-full rounded-md border border-neutral-200 bg-transparent px-3 py-2 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
               />
             </div>
-
-            <div>
-              <label htmlFor="min_stock_alert" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                Min Stock Alert
-              </label>
-              <input
-                id="min_stock_alert"
-                type="number"
-                required
-                min="0"
-                value={form.min_stock_alert}
-                onChange={(e) => setForm({ ...form, min_stock_alert: e.target.value })}
-                placeholder="30"
-                className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
-              />
-            </div>
           </div>
 
           <div className="mt-5 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <button
               type="submit"
-              className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-neutral-700 active:scale-[0.98] dark:bg-white dark:text-black dark:hover:bg-neutral-200"
+              disabled={isSubmitting}
+              className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-neutral-700 active:scale-[0.98] disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
             >
-              Add Cosmetic
+              {isSubmitting ? "Creating..." : "Add Cosmetic"}
             </button>
             <button
               type="button"
