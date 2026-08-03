@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Search, X, Minus, Plus, ShoppingCart, Check, Printer, DollarSign, Clock, Lock, ShieldCheck } from "lucide-react";
-import { mockMedicines, mockCosmetics, mockCategories } from "@/lib/mock-data";
-import type { ApiMedicine, ApiCosmetic } from "@/lib/mock-data";
 import { useToast } from "@/components/ui/toast";
+import type { ApiMedicine, ApiCosmetic } from "@/lib/mock-data";
 import { useAuth } from "@/context/auth-context";
 import { Receipt } from "@/components/ui/receipt";
 import { StartShiftModal } from "@/components/pos/start-shift-modal";
 import { CloseShiftModal, type ShiftSummaryData } from "@/components/pos/close-shift-modal";
+import { getCurrentShift, openShift, closeShift } from "@/lib/api/shifts";
+import { createSale, getPosProducts, type PosProduct } from "@/lib/api/pos";
+import { getCategories } from "@/lib/api/categories";
 
 interface UnifiedProduct {
   id: number;
@@ -50,78 +52,115 @@ export default function POSPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Shift Management State
-  const [isShiftOpen, setIsShiftOpen] = useState(true);
-  const [openingFloat, setOpeningFloat] = useState(1000);
-  const [startTime, setStartTime] = useState("08:30 AM");
-  const [cashSales, setCashSales] = useState(3250);
-  const [telebirrSales, setTelebirrSales] = useState(1400);
-  const [cardSales, setCardSales] = useState(850);
+  const [isShiftOpen, setIsShiftOpen] = useState(false);
+  const [openingFloat, setOpeningFloat] = useState(0);
+  const [startTime, setStartTime] = useState("—");
+  const [cashSales, setCashSales] = useState(0);
+  const [telebirrSales, setTelebirrSales] = useState(0);
+  const [cardSales, setCardSales] = useState(0);
   const [startShiftModalOpen, setStartShiftModalOpen] = useState(false);
   const [closeShiftModalOpen, setCloseShiftModalOpen] = useState(false);
-  const [totalSalesCount, setTotalSalesCount] = useState(12);
+  const [totalSalesCount, setTotalSalesCount] = useState(0);
 
-  const handleStartShift = (floatVal: number) => {
-    setOpeningFloat(floatVal);
-    setIsShiftOpen(true);
-    setStartShiftModalOpen(false);
-    const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    setStartTime(now);
-    setCashSales(0);
-    setTelebirrSales(0);
-    setCardSales(0);
-    setTotalSalesCount(0);
-    toast(`Register shift opened with ${floatVal.toLocaleString()} ETB float`, "success");
+  const [posProducts, setPosProducts] = useState<PosProduct[]>([]);
+  const [categoriesList, setCategoriesList] = useState<{ id: number; name: string }[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+
+  const fetchActiveShift = async () => {
+    try {
+      const res = await getCurrentShift();
+      if (res.data?.shift) {
+        const s = res.data.shift;
+        const m = res.data.metrics;
+        setIsShiftOpen(true);
+        setOpeningFloat(m?.opening_balance ?? s.opening_balance ?? 0);
+        setStartTime(new Date(s.opened_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+        setCashSales(m?.cash_sales ?? 0);
+        setTelebirrSales(m?.mobile_money_sales ?? 0);
+        setCardSales(m?.card_sales ?? 0);
+        setTotalSalesCount(m?.total_transactions ?? 0);
+      }
+    } catch {
+      setIsShiftOpen(false);
+    }
   };
 
-  const handleCompleteCloseShift = () => {
-    setIsShiftOpen(false);
-    setCloseShiftModalOpen(false);
+  const fetchPosData = async () => {
+    setIsLoadingProducts(true);
+    try {
+      const [prodRes, catRes] = await Promise.all([
+        getPosProducts({
+          search: search || undefined,
+          type: activeProductType !== "all" ? activeProductType.toLowerCase() : undefined,
+        }),
+        getCategories(),
+      ]);
+      setPosProducts(prodRes.data || []);
+      const rawCats = Array.isArray(catRes.data) ? catRes.data : (catRes.data as any)?.data || [];
+      setCategoriesList(rawCats);
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed to load POS products", "error");
+    } finally {
+      setIsLoadingProducts(false);
+    }
   };
 
-  const unifiedProducts: UnifiedProduct[] = [
-    ...mockMedicines.map((m) => ({
-      id: m.id,
-      name: m.name,
-      type: "medicine" as const,
-      category_id: m.category_id,
-      pack_size: m.pack_size,
-      pack_price: m.pack_price,
-      unit_price: m.unit_price,
-      current_stock: m.current_stock,
-      min_stock_alert: m.min_stock_alert,
-      status: m.status,
-      category: m.category,
-      medicine: m,
-    })),
-    ...mockCosmetics.map((c) => ({
-      id: c.id,
-      name: c.name,
-      type: "cosmetic" as const,
-      category_id: c.category_id,
-      pack_size: c.pack_size,
-      pack_price: c.pack_price,
-      unit_price: c.unit_price,
-      current_stock: c.current_stock,
-      min_stock_alert: c.min_stock_alert,
-      status: c.status,
-      category: c.category,
-      cosmetic: c,
-    })),
-  ];
+  useEffect(() => {
+    fetchActiveShift();
+  }, []);
 
-  const categories = ["all", ...mockCategories.map((c) => c.name)];
+  useEffect(() => {
+    fetchPosData();
+  }, [search, activeProductType]);
+
+  const handleStartShift = async (floatVal: number, notes?: string) => {
+    try {
+      await openShift({ opening_balance: floatVal, notes });
+      setOpeningFloat(floatVal);
+      setIsShiftOpen(true);
+      setStartShiftModalOpen(false);
+      await fetchActiveShift();
+      toast(`Register shift opened with ${floatVal.toLocaleString()} ETB float`, "success");
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed to open register shift", "error");
+    }
+  };
+
+  const handleCompleteCloseShift = async (summary: ShiftSummaryData & { countedCash: number; discrepancy: number }) => {
+    try {
+      await closeShift({ actual_cash: summary.countedCash });
+      setIsShiftOpen(false);
+      setCloseShiftModalOpen(false);
+      toast("Register shift closed and cash reconciled successfully", "success");
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed to close register shift", "error");
+    }
+  };
+
+  const unifiedProducts: UnifiedProduct[] = posProducts.map((p) => ({
+    id: p.product_id,
+    name: p.name,
+    type: p.type.toLowerCase() as "medicine" | "cosmetic",
+    category_id: p.category?.id ?? 0,
+    pack_size: 1,
+    pack_price: Number(p.selling_price),
+    unit_price: Number(p.selling_price),
+    current_stock: p.available_quantity,
+    min_stock_alert: 5,
+    status: "active",
+    category: p.category ? { name: p.category.name } : null,
+  }));
+
+  const categories = ["all", ...Array.from(new Set(categoriesList.map((c) => c.name)))];
   const productTypes = ["all", "Medicine", "Cosmetic"];
-  const cosmeticTypes = ["all", "Cream", "Lotion", "Shampoo", "Conditioner", "Makeup", "Lip Care", "Serum"];
 
   const filteredProducts = unifiedProducts.filter((p) => {
-    if (p.status !== "active") return false;
-    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = activeCategory === "all" || p.category?.name === activeCategory;
     const matchesProductType =
       activeProductType === "all" ||
       (activeProductType === "Medicine" && p.type === "medicine") ||
       (activeProductType === "Cosmetic" && p.type === "cosmetic");
-    return matchesSearch && matchesCategory && matchesProductType;
+    return matchesCategory && matchesProductType;
   });
 
   const addToCart = (product: UnifiedProduct, unit: "pack" | "single") => {
@@ -160,7 +199,7 @@ export default function POSPage() {
     setPrescriptionImage(null);
   };
 
-  const completeSale = () => {
+  const completeSale = async () => {
     if (!isShiftOpen) {
       toast("Register shift is closed. Open shift before selling.", "error");
       setStartShiftModalOpen(true);
@@ -175,18 +214,36 @@ export default function POSPage() {
       return;
     }
 
-    if (paymentType === "Cash") {
-      setCashSales((prev) => prev + total);
-    } else if (paymentType === "Telebirr" || paymentType === "Mobile Money") {
-      setTelebirrSales((prev) => prev + total);
-    } else {
-      setCardSales((prev) => prev + total);
-    }
-    setTotalSalesCount((prev) => prev + 1);
+    try {
+      const itemsPayload = cart.map((item) => ({
+        product_id: item.product.id,
+        quantity: item.quantity,
+      }));
 
-    const id = `SALE-${String(Math.floor(1000 + Math.random() * 9000))}`;
-    setLastSaleId(id);
-    setCompleted(true);
+      const res = await createSale({
+        payment_type: paymentType.toLowerCase().replace(/ /g, "_"),
+        cash_given: paymentType === "Cash" ? cashGiven : undefined,
+        items: itemsPayload,
+      });
+
+      const saleData = res.data;
+      const saleCode = saleData?.id ? `SALE-${String(saleData.id).padStart(4, "0")}` : `SALE-${Math.floor(1000 + Math.random() * 9000)}`;
+
+      if (paymentType === "Cash") {
+        setCashSales((prev) => prev + total);
+      } else if (paymentType === "Telebirr" || paymentType === "Mobile Money") {
+        setTelebirrSales((prev) => prev + total);
+      } else {
+        setCardSales((prev) => prev + total);
+      }
+      setTotalSalesCount((prev) => prev + 1);
+
+      setLastSaleId(saleCode);
+      setCompleted(true);
+      toast("Sale created successfully", "success");
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed to create sale", "error");
+    }
   };
 
   const resetSale = () => {
@@ -256,9 +313,9 @@ export default function POSPage() {
 
       <div className="flex flex-col xl:flex-row gap-4 overflow-hidden">
       {/* Left: Medicine List */}
-      <div className="flex-1 h-full rounded-lg border border-border bg-white dark:bg-[#0A0A0A]">
+      <div className="flex-1 min-w-0 h-full rounded-lg border border-border bg-white dark:bg-[#0A0A0A]">
         {/* Search bar + category pills */}
-        <div className="border-b border-border p-3 space-y-3">
+        <div className="border-b border-border p-3 space-y-3 max-w-full overflow-hidden">
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
@@ -271,8 +328,8 @@ export default function POSPage() {
               />
             </div>
           </div>
-          <div className="flex flex-col gap-2">
-            <div className="flex gap-2 overflow-x-auto scrollbar-none">
+          <div className="flex flex-col gap-2 max-w-full overflow-hidden">
+            <div className="flex gap-2 overflow-x-auto scrollbar-none max-w-full py-0.5">
               {categories.map((cat) => (
                 <button
                   key={cat}
@@ -286,7 +343,7 @@ export default function POSPage() {
                 </button>
               ))}
             </div>
-            <div className="flex gap-2 overflow-x-auto scrollbar-none">
+            <div className="flex gap-2 overflow-x-auto scrollbar-none max-w-full py-0.5">
               {productTypes.map((pt) => (
                 <button
                   key={pt}
@@ -318,7 +375,7 @@ export default function POSPage() {
             </thead>
             <tbody>
               {filteredProducts.map((prod) => {
-                const cat = prod.category ?? mockCategories.find((c) => c.id === prod.category_id);
+                const cat = prod.category;
                 return (
                   <tr key={`${prod.type}-${prod.id}`} className="border-b border-border last:border-b-0 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors">
                     <td className="px-4 py-2.5">
@@ -380,7 +437,7 @@ export default function POSPage() {
         {/* Cards view - mobile only */}
         <div className="sm:hidden divide-y divide-border">
           {filteredProducts.map((prod) => {
-            const cat = prod.category ?? mockCategories.find((c) => c.id === prod.category_id);
+            const cat = prod.category;
             const inCartPack = cart.find(
               (item) => item.product.id === prod.id && item.unit === "pack"
             );
