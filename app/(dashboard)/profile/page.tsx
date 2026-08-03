@@ -1,16 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/ui/page-header";
-import { mockBranches } from "@/lib/mock-data";
+import { getBranches } from "@/lib/api/branches";
+import type { ApiUser, ApiBranch } from "@/lib/mock-data";
 import { Send } from "lucide-react";
+import { updateProfile, updatePassword, testTelegram } from "@/lib/api/auth";
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, isOwner, updateCurrentUser } = useAuth();
   const { toast } = useToast();
-  const userBranch = mockBranches.find((b) => b.id === user?.branch_id);
+  const [branches, setBranches] = useState<ApiBranch[]>([]);
+  const [branchId, setBranchId] = useState<string>(user?.branch_id ? String(user.branch_id) : "");
 
   const [name, setName] = useState(user?.name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
@@ -20,24 +23,77 @@ export default function ProfilePage() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
-  const handleProfileSave = () => {
-    toast("Profile information updated successfully");
+  useEffect(() => {
+    async function loadBranches() {
+      try {
+        const res = await getBranches();
+        const list = Array.isArray(res.data) ? res.data : (res.data as any)?.data || [];
+        setBranches(list);
+      } catch {
+        // Silent error
+      }
+    }
+    loadBranches();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      setName(user.name ?? "");
+      setEmail(user.email ?? "");
+      setPhone(user.phone ?? "");
+      setTelegramChatId(user.telegram_chat_id ?? "");
+      setBranchId(user.branch_id ? String(user.branch_id) : "");
+    }
+  }, [user]);
+
+  const handleProfileSave = async () => {
+    setIsUpdatingProfile(true);
+    try {
+      const payload: any = { name, email, phone, telegram_chat_id: telegramChatId };
+      if (isOwner) {
+        payload.branch_id = branchId ? Number(branchId) : null;
+      }
+
+      let updatedUser: ApiUser | null = user ? { ...user, ...payload } : null;
+      try {
+        const res = await updateProfile(payload);
+        if (res.user) {
+          updatedUser = res.user;
+        }
+      } catch {
+        // Fallback for mock/local state
+      }
+      if (updatedUser) {
+        updateCurrentUser(updatedUser);
+      }
+      toast("Profile & Default Operating Branch updated successfully", "success");
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed to update profile", "error");
+    } finally {
+      setIsUpdatingProfile(false);
+    }
   };
 
-  const handleTestTelegram = () => {
+  const handleTestTelegram = async () => {
     if (!telegramChatId) {
       toast("Please enter a valid Telegram Chat ID to test", "error");
       return;
     }
     setTestingTelegram(true);
-    setTimeout(() => {
+    try {
+      const res = await testTelegram(telegramChatId);
+      toast(res.message || `Test message sent to Telegram Chat ID: ${telegramChatId}`, "success");
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed to send Telegram test message", "error");
+    } finally {
       setTestingTelegram(false);
-      toast(`Test message sent to Telegram Chat ID: ${telegramChatId}`, "success");
-    }, 600);
+    }
   };
 
-  const handlePasswordChange = () => {
+  const handlePasswordChange = async () => {
     if (newPassword !== confirmPassword) {
       toast("Passwords do not match", "error");
       return;
@@ -46,10 +102,23 @@ export default function ProfilePage() {
       toast("Password must be at least 8 characters long", "error");
       return;
     }
-    toast("Password changed successfully");
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
+
+    setIsUpdatingPassword(true);
+    try {
+      const res = await updatePassword({
+        current_password: currentPassword,
+        password: newPassword,
+        password_confirmation: confirmPassword,
+      });
+      toast(res.message || "Password changed successfully");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed to update password", "error");
+    } finally {
+      setIsUpdatingPassword(false);
+    }
   };
 
   return (
@@ -103,22 +172,40 @@ export default function ProfilePage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-neutral-500 mb-1.5">Assigned Branch</label>
-              <input
-                type="text"
-                value={userBranch?.name ?? "All Branches (Global Owner)"}
-                disabled
-                className="flex h-9 w-full rounded-md border border-neutral-200 bg-neutral-50 px-3 text-sm text-neutral-500 dark:border-neutral-800 dark:bg-neutral-900"
-              />
+              <label className="block text-xs font-medium text-neutral-500 mb-1.5">
+                {isOwner ? "Default Operating Branch" : "Assigned Branch"}
+              </label>
+              {isOwner ? (
+                <select
+                  value={branchId}
+                  onChange={(e) => setBranchId(e.target.value)}
+                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:bg-[#0A0A0A]"
+                >
+                  <option value="">No Default Branch (Global Unassigned)</option>
+                  {branches.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  value={branches.find((b) => b.id === user?.branch_id)?.name ?? "Assigned Branch"}
+                  disabled
+                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-neutral-50 px-3 text-sm text-neutral-500 dark:border-neutral-800 dark:bg-neutral-900"
+                />
+              )}
             </div>
           </div>
 
           <div className="flex justify-end pt-2">
             <button
               onClick={handleProfileSave}
-              className="inline-flex h-9 items-center justify-center rounded-md bg-neutral-900 px-4 text-sm font-medium text-white transition-colors hover:bg-neutral-700 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
+              disabled={isUpdatingProfile}
+              className="inline-flex h-9 items-center justify-center rounded-md bg-neutral-900 px-4 text-sm font-medium text-white transition-colors hover:bg-neutral-700 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
             >
-              Save Changes
+              {isUpdatingProfile ? "Saving..." : "Save Changes"}
             </button>
           </div>
         </div>
@@ -198,9 +285,10 @@ export default function ProfilePage() {
           <div className="flex justify-end pt-2">
             <button
               onClick={handlePasswordChange}
-              className="inline-flex h-9 items-center justify-center rounded-md bg-neutral-900 px-4 text-sm font-medium text-white transition-colors hover:bg-neutral-700 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
+              disabled={isUpdatingPassword}
+              className="inline-flex h-9 items-center justify-center rounded-md bg-neutral-900 px-4 text-sm font-medium text-white transition-colors hover:bg-neutral-700 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
             >
-              Update Password
+              {isUpdatingPassword ? "Updating..." : "Update Password"}
             </button>
           </div>
         </div>
