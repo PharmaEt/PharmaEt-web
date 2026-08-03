@@ -1,12 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { mockUsers } from "@/lib/mock-data";
+import { useToast } from "@/components/ui/toast";
+import { createBranch } from "@/lib/api/branches";
+import { getUsers, type ApiUser } from "@/lib/api/users";
 
 export default function NewBranchPage() {
   const router = useRouter();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState<ApiUser[]>([]);
   const [form, setForm] = useState({
     name: "",
     location: "",
@@ -15,9 +20,36 @@ export default function NewBranchPage() {
     manager_id: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    async function loadUsers() {
+      try {
+        const res = await getUsers();
+        setUsers(res.data || []);
+      } catch {
+        // ignore
+      }
+    }
+    loadUsers();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    router.push("/branches");
+    setLoading(true);
+    try {
+      const res = await createBranch({
+        name: form.name,
+        location: form.location || null,
+        phone: form.phone || null,
+        founded_year: form.founded_year ? parseInt(form.founded_year) : null,
+        manager_id: form.manager_id ? parseInt(form.manager_id) : null,
+      });
+      toast(res.message || "Branch created successfully", "success");
+      router.push("/branches");
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed to create branch", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -61,7 +93,6 @@ export default function NewBranchPage() {
               <input
                 id="location"
                 type="text"
-                required
                 value={form.location}
                 onChange={(e) => setForm({ ...form, location: e.target.value })}
                 placeholder="e.g., Bole Road, Addis Ababa"
@@ -71,23 +102,20 @@ export default function NewBranchPage() {
 
             <div>
               <label htmlFor="manager" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                Manager
+                Branch Manager <span className="text-neutral-400">(optional)</span>
               </label>
               <select
                 id="manager"
-                required
                 value={form.manager_id}
                 onChange={(e) => setForm({ ...form, manager_id: e.target.value })}
-                className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+                className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600 dark:bg-neutral-900"
               >
-                <option value="">Select manager</option>
-                {mockUsers
-                  .filter((u) => u.role === "manager" || u.role === "owner")
-                  .map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
-                    </option>
-                  ))}
+                <option value="">Select manager (Unassigned)</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name} ({u.role.replace("_", " ")})
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -127,9 +155,10 @@ export default function NewBranchPage() {
           <div className="mt-5 flex items-center gap-3">
             <button
               type="submit"
-              className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-neutral-700 active:scale-[0.98] dark:bg-white dark:text-black dark:hover:bg-neutral-200"
+              disabled={loading}
+              className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-neutral-700 active:scale-[0.98] disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
             >
-              Create Branch
+              {loading ? "Creating..." : "Create Branch"}
             </button>
             <button
               type="button"
