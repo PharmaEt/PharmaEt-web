@@ -1,40 +1,76 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Eye, Plus } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
-import { mockStock } from "@/lib/mock-data";
+import { useToast } from "@/components/ui/toast";
+import { useAuth } from "@/context/auth-context";
+import { getStockBatches } from "@/lib/api/stock";
+import { formatDate } from "@/lib/utils";
 import type { ApiStock } from "@/lib/mock-data";
 
 function getProductName(stock: ApiStock): string {
-  const p = stock.product;
-  if ("strength" in p && p.strength) return `${p.name} ${p.strength}`;
+  const p = stock.product as any;
+  if (!p) return "—";
+  const details = p.productable;
+  if (details?.strength) return `${p.name} ${details.strength}`;
+  if (p.strength) return `${p.name} ${p.strength}`;
   return p.name;
 }
 
 function getProductForm(stock: ApiStock): string {
-  const p = stock.product;
-  if ("dosage_form" in p) return p.dosage_form;
-  if ("product_type" in p) return p.product_type;
+  const p = stock.product as any;
+  if (!p) return "—";
+  const details = p.productable;
+  if (details?.dosage_form) return details.dosage_form;
+  if (details?.product_type) return details.product_type;
+  if (p.dosage_form) return p.dosage_form;
+  if (p.product_type) return p.product_type;
   return "—";
 }
 
 export default function StockPage() {
   const router = useRouter();
+  const { toast } = useToast();
+  const { canManageCatalog } = useAuth();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
+  const [stocks, setStocks] = useState<ApiStock[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filtered = mockStock.filter((s) => {
-    const name = getProductName(s).toLowerCase();
-    const matchesSearch = name.includes(search.toLowerCase());
-    if (filter === "low") return matchesSearch && s.quantity <= s.product.min_stock_alert;
-    if (filter === "ok") return matchesSearch && s.quantity > s.product.min_stock_alert;
-    return matchesSearch;
+  const fetchStock = async () => {
+    setIsLoading(true);
+    try {
+      const res = await getStockBatches({ search });
+      setStocks(res.data || []);
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed to load inventory stock batches", "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStock();
+  }, [search]);
+
+  const filtered = stocks.filter((s) => {
+    const minAlert = s.product?.min_stock_alert ?? 10;
+    if (filter === "low") return s.quantity <= minAlert;
+    if (filter === "ok") return s.quantity > minAlert;
+    return true;
   });
 
   const columns = [
+    {
+      key: "id",
+      header: "#",
+      render: (_: ApiStock, index: number) => (
+        <span className="font-medium text-sm text-neutral-500">#{index + 1}</span>
+      ),
+    },
     {
       key: "product",
       header: "Product",
@@ -44,7 +80,7 @@ export default function StockPage() {
     },
     {
       key: "form",
-      header: "Form",
+      header: "Form / Type",
       render: (item: ApiStock) => (
         <span className="text-sm text-neutral-600 dark:text-neutral-400">{getProductForm(item)}</span>
       ),
@@ -62,7 +98,8 @@ export default function StockPage() {
       key: "quantity",
       header: "In Stock",
       render: (item: ApiStock) => {
-        const isLow = item.quantity <= item.product.min_stock_alert;
+        const minAlert = item.product?.min_stock_alert ?? 10;
+        const isLow = item.quantity <= minAlert;
         return (
           <span className={`text-sm font-medium ${isLow ? "text-red-600 dark:text-red-400" : ""}`}>
             {item.quantity}
@@ -72,9 +109,9 @@ export default function StockPage() {
     },
     {
       key: "min",
-      header: "Min",
+      header: "Min Alert",
       render: (item: ApiStock) => (
-        <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.product.min_stock_alert}</span>
+        <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.product?.min_stock_alert ?? 10}</span>
       ),
       hideOnMobile: true,
     },
@@ -94,8 +131,8 @@ export default function StockPage() {
         const daysLeft = Math.ceil((new Date(item.expiry_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
         const isUrgent = daysLeft <= 90;
         return (
-          <span className={`text-sm ${isUrgent ? "text-amber-600 dark:text-amber-400" : "text-neutral-600 dark:text-neutral-400"}`}>
-            {item.expiry_date}
+          <span className={`text-sm ${isUrgent ? "text-amber-600 dark:text-amber-400 font-medium" : "text-neutral-600 dark:text-neutral-400"}`}>
+            {formatDate(item.expiry_date)}
           </span>
         );
       },
@@ -105,7 +142,8 @@ export default function StockPage() {
       key: "status",
       header: "Status",
       render: (item: ApiStock) => {
-        const isLow = item.quantity <= item.product.min_stock_alert;
+        const minAlert = item.product?.min_stock_alert ?? 10;
+        const isLow = item.quantity <= minAlert;
         return (
           <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${
             isLow
@@ -137,8 +175,8 @@ export default function StockPage() {
     <div className="space-y-4 sm:space-y-6">
       <PageHeader
         title="Stock"
-        subtitle="Current inventory levels"
-        action={{ label: "Add Stock", icon: Plus, href: "/stock/new" }}
+        subtitle="Current inventory levels & batches"
+        action={canManageCatalog ? { label: "Add Stock Intake", icon: Plus, href: "/stock/new" } : undefined}
       />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -155,15 +193,15 @@ export default function StockPage() {
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          className="flex h-9 w-full sm:w-auto rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+          className="flex h-9 w-full sm:w-auto rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600 dark:bg-neutral-900"
         >
-          <option value="all">All Stock</option>
+          <option value="all">All Stock Batches</option>
           <option value="low">Low Stock</option>
           <option value="ok">Normal Stock</option>
         </select>
       </div>
 
-      <DataTable columns={columns} data={filtered} emptyMessage="No stock data found" />
+      <DataTable columns={columns} data={filtered} emptyMessage={isLoading ? "Loading inventory stock batches..." : "No stock data found"} />
     </div>
   );
 }

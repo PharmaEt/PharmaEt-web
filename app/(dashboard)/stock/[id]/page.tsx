@@ -1,28 +1,54 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { mockStock } from "@/lib/mock-data";
+import { useToast } from "@/components/ui/toast";
+import { getStockBatch } from "@/lib/api/stock";
+import { formatDate } from "@/lib/utils";
 import type { ApiStock } from "@/lib/mock-data";
 
 function getProductName(stock: ApiStock): string {
-  const p = stock.product;
-  if ("strength" in p && p.strength) return `${p.name} ${p.strength}`;
+  const p = stock.product as any;
+  if (!p) return "—";
+  const details = p.productable;
+  if (details?.strength) return `${p.name} ${details.strength}`;
+  if (p.strength) return `${p.name} ${p.strength}`;
   return p.name;
-}
-
-function getProductDetail(stock: ApiStock): string {
-  const p = stock.product;
-  if ("dosage_form" in p) return `${p.strength} · ${p.dosage_form}`;
-  if ("product_type" in p) return p.product_type;
-  return "";
 }
 
 export default function StockDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const stock = mockStock.find((s) => s.id === Number(params.id));
+  const { toast } = useToast();
+  const [stock, setStock] = useState<ApiStock | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchStock() {
+      setIsLoading(true);
+      try {
+        const res = await getStockBatch(params.id as string);
+        setStock(res.data);
+      } catch (err: unknown) {
+        toast(err instanceof Error ? err.message : "Failed to load stock details", "error");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    if (params.id) {
+      fetchStock();
+    }
+  }, [params.id]);
+
+  if (isLoading) {
+    return (
+      <div className="py-20 text-center text-sm text-neutral-500">
+        Loading stock details...
+      </div>
+    );
+  }
 
   if (!stock) {
     return (
@@ -50,7 +76,8 @@ export default function StockDetailPage() {
     );
   }
 
-  const isLow = stock.quantity <= stock.product.min_stock_alert;
+  const minAlert = stock.product?.min_stock_alert ?? 10;
+  const isLow = stock.quantity <= minAlert;
   const daysLeft = stock.expiry_date
     ? Math.ceil((new Date(stock.expiry_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
@@ -67,7 +94,7 @@ export default function StockDetailPage() {
         </button>
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">{getProductName(stock)}</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">Stock details</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">Stock batch details</p>
         </div>
       </div>
 
@@ -76,12 +103,11 @@ export default function StockDetailPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <p className="text-xs text-neutral-500">Product</p>
-            <p className="text-sm font-medium">{stock.product.name}</p>
-            <p className="text-xs text-neutral-500">{getProductDetail(stock)}</p>
+            <p className="text-sm font-medium">{stock.product?.name}</p>
           </div>
           <div>
             <p className="text-xs text-neutral-500">Branch</p>
-            <p className="text-sm font-medium">{stock.branch.name}</p>
+            <p className="text-sm font-medium">{stock.branch?.name ?? "Global / Network Wide"}</p>
           </div>
           <div>
             <p className="text-xs text-neutral-500">Supplier</p>
@@ -100,7 +126,7 @@ export default function StockDetailPage() {
           </div>
           <div>
             <p className="text-xs text-neutral-500">Min Stock Alert</p>
-            <p className="text-sm">{stock.product.min_stock_alert}</p>
+            <p className="text-sm">{minAlert}</p>
           </div>
           <div>
             <p className="text-xs text-neutral-500">Batch Number</p>
@@ -109,7 +135,7 @@ export default function StockDetailPage() {
           <div>
             <p className="text-xs text-neutral-500">Expiry Date</p>
             <p className={`text-sm ${daysLeft !== null && daysLeft <= 90 ? "text-amber-600 dark:text-amber-400 font-medium" : ""}`}>
-              {stock.expiry_date ?? "—"}
+              {formatDate(stock.expiry_date)}
               {daysLeft !== null && (
                 <span className="ml-1.5 text-xs text-neutral-500">({daysLeft} days left)</span>
               )}
@@ -122,16 +148,6 @@ export default function StockDetailPage() {
           <div>
             <p className="text-xs text-neutral-500">Selling Price</p>
             <p className="text-sm font-medium">ETB {stock.selling_price}</p>
-          </div>
-          {stock.profit_pct !== null && (
-            <div>
-              <p className="text-xs text-neutral-500">Profit Margin</p>
-              <p className="text-sm">{stock.profit_pct}%</p>
-            </div>
-          )}
-          <div>
-            <p className="text-xs text-neutral-500">Received</p>
-            <p className="text-sm">{new Date(stock.created_at).toLocaleDateString()}</p>
           </div>
         </div>
       </div>
