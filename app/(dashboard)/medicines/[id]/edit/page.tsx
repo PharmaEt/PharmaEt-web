@@ -1,63 +1,103 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { mockMedicines, mockCategories, mockBranches } from "@/lib/mock-data";
 import { useToast } from "@/components/ui/toast";
+import { getCategories } from "@/lib/api/categories";
+import { getMedicine, updateMedicine } from "@/lib/api/medicines";
+import type { ApiCategory, ApiProduct } from "@/lib/mock-data";
 
 export default function MedicineEditPage() {
   const router = useRouter();
   const params = useParams();
   const { toast } = useToast();
-  const medicine = mockMedicines.find((m) => m.id === Number(params.id));
+
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
+  const [medicine, setMedicine] = useState<ApiProduct | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [form, setForm] = useState({
-    name: medicine?.name ?? "",
-    generic_name: medicine?.generic_name ?? "",
-    category_id: medicine?.category_id?.toString() ?? "",
-    strength: medicine?.strength ?? "",
-    dosage_form: medicine?.dosage_form ?? "",
-    pack_size: medicine?.pack_size?.toString() ?? "",
-    pack_price: medicine?.pack_price?.toString() ?? "",
-    unit_price: medicine?.unit_price?.toString() ?? "",
-    min_stock_alert: medicine?.min_stock_alert?.toString() ?? "",
-    is_prescription_required: medicine?.is_prescription_required ?? false,
-    description: medicine?.description ?? "",
-    status: medicine?.status ?? "active",
+    name: "",
+    generic_name: "",
+    category_id: "",
+    strength: "",
+    dosage_form: "",
+    pack_size: "",
+    min_stock_alert: "",
+    is_prescription_required: false,
+    description: "",
+    status: "active" as "active" | "inactive",
   });
 
-  if (!medicine) {
-    return (
-      <div className="space-y-4 sm:space-y-6">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.back()}
-            aria-label="Go back"
-            className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Medicine Not Found</h1>
-            <p className="mt-0.5 text-sm text-muted-foreground">The requested medicine does not exist</p>
-          </div>
-        </div>
-        <Link
-          href="/medicines"
-          className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-neutral-700 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
-        >
-          Go to list
-        </Link>
-      </div>
-    );
-  }
+  useEffect(() => {
+    async function loadData() {
+      setIsLoading(true);
+      try {
+        const [catRes, medRes] = await Promise.all([
+          getCategories(),
+          getMedicine(params.id as string),
+        ]);
+        const catList = Array.isArray(catRes.data) ? catRes.data : (catRes.data as any)?.data || [];
+        setCategories(catList);
 
-  const handleSubmit = (e: React.FormEvent) => {
+        const med = medRes.data;
+        setMedicine(med);
+        const details = (med.productable as any) || (med as any).details || {};
+
+        setForm({
+          name: med.name ?? "",
+          generic_name: details.generic_name ?? "",
+          category_id: med.category_id ? String(med.category_id) : "",
+          strength: details.strength ?? "",
+          dosage_form: details.dosage_form ?? "",
+          pack_size: details.pack_size ? String(details.pack_size) : "1",
+          min_stock_alert: med.min_stock_alert ? String(med.min_stock_alert) : "10",
+          is_prescription_required: Boolean(details.is_prescription_required),
+          description: med.description ?? "",
+          status: med.status ?? "active",
+        });
+      } catch (err: unknown) {
+        toast(err instanceof Error ? err.message : "Failed to load medicine details", "error");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    if (params.id) {
+      loadData();
+    }
+  }, [params.id]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast("Medicine updated successfully");
-    router.push("/medicines");
+    if (!form.category_id) {
+      toast("Please select a category", "error");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await updateMedicine(params.id as string, {
+        name: form.name,
+        category_id: Number(form.category_id),
+        generic_name: form.generic_name || undefined,
+        dosage_form: form.dosage_form || undefined,
+        strength: form.strength || undefined,
+        is_prescription_required: form.is_prescription_required,
+        pack_size: form.pack_size ? Number(form.pack_size) : undefined,
+        min_stock_alert: form.min_stock_alert ? Number(form.min_stock_alert) : undefined,
+        description: form.description || undefined,
+        status: form.status,
+      });
+      toast("Medicine updated successfully", "success");
+      router.push("/medicines");
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed to update medicine", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -122,7 +162,7 @@ export default function MedicineEditPage() {
                   className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
                 >
                   <option value="" disabled>Select category</option>
-                  {mockCategories.map((c) => (
+                  {categories.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
@@ -179,42 +219,6 @@ export default function MedicineEditPage() {
                   value={form.pack_size}
                   onChange={(e) => setForm({ ...form, pack_size: e.target.value })}
                   placeholder="e.g., 100"
-                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label htmlFor="pack_price" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Pack Price (ETB)
-                </label>
-                <input
-                  id="pack_price"
-                  type="number"
-                  required
-                  min="0"
-                  step="0.01"
-                  value={form.pack_price}
-                  onChange={(e) => setForm({ ...form, pack_price: e.target.value })}
-                  placeholder="e.g., 250"
-                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="unit_price" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Unit Price (ETB)
-                </label>
-                <input
-                  id="unit_price"
-                  type="number"
-                  required
-                  min="0"
-                  step="0.01"
-                  value={form.unit_price}
-                  onChange={(e) => setForm({ ...form, unit_price: e.target.value })}
-                  placeholder="e.g., 25"
                   className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
                 />
               </div>
