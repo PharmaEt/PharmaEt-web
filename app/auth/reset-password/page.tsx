@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, CheckCircle2 } from "lucide-react";
 
+import { resetPassword } from "@/lib/api/auth";
+
 export default function ResetPasswordPage() {
   const router = useRouter();
   const [phone, setPhone] = useState("");
@@ -15,9 +17,14 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!phone) {
+      setError("Please enter your registered phone number");
+      return;
+    }
 
     if (!token || token.length < 6) {
       setError("Please enter the 6-digit verification code");
@@ -35,10 +42,19 @@ export default function ResetPasswordPage() {
     }
 
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await resetPassword({
+        phone,
+        token,
+        password,
+        password_confirmation: passwordConfirmation,
+      });
       setSuccess(true);
-    }, 600);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to reset password");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

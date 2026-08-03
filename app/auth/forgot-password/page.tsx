@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Send, CheckCircle2, ShieldCheck, ArrowLeft } from "lucide-react";
 
+import { forgotPassword, resetPassword } from "@/lib/api/auth";
+
 export default function ForgotPasswordPage() {
   const router = useRouter();
   const [step, setStep] = useState<"request" | "verify" | "success">("request");
@@ -15,7 +17,7 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleRequestCode = (e: React.FormEvent) => {
+  const handleRequestCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     if (!phone) {
@@ -23,13 +25,18 @@ export default function ForgotPasswordPage() {
       return;
     }
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await forgotPassword({ phone });
+      setToken("");
       setStep("verify");
-    }, 600);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to send reset code");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleResetPassword = (e: React.FormEvent) => {
+  const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -47,10 +54,19 @@ export default function ForgotPasswordPage() {
     }
 
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await resetPassword({
+        phone,
+        token,
+        password: newPassword,
+        password_confirmation: confirmPassword,
+      });
       setStep("success");
-    }, 700);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to reset password");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -137,19 +153,6 @@ export default function ForgotPasswordPage() {
                 <span>
                   Check your Telegram app for a message containing your 6-digit code.
                 </span>
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-neutral-700 dark:text-neutral-300">
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  required
-                  className="flex h-9 w-full rounded-md border border-neutral-200 bg-neutral-50 px-3 text-sm text-neutral-500 dark:border-neutral-800 dark:bg-neutral-900"
-                />
               </div>
 
               <div>

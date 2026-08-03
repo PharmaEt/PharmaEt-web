@@ -1,17 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push("/");
+    }
+  }, [isAuthenticated, router]);
+
+  useEffect(() => {
+    const savedPhone = localStorage.getItem("remembered_phone");
+    if (savedPhone) {
+      setPhone(savedPhone);
+      setRemember(true);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,10 +34,16 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
+      if (remember) {
+        localStorage.setItem("remembered_phone", phone);
+      } else {
+        localStorage.removeItem("remembered_phone");
+      }
+
       await login(phone, password);
       router.push("/");
-    } catch {
-      setError("Invalid credentials");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Invalid credentials");
       setIsLoading(false);
     }
   };
@@ -107,6 +128,8 @@ export default function LoginPage() {
               <input
                 id="remember"
                 type="checkbox"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
                 className="h-4 w-4 rounded border-neutral-300"
               />
               <label htmlFor="remember" className="text-sm text-neutral-500">
@@ -126,10 +149,6 @@ export default function LoginPage() {
               )}
             </button>
           </form>
-
-          <p className="text-center text-xs text-neutral-400">
-            Demo: Enter any phone & password
-          </p>
         </div>
       </div>
     </div>
