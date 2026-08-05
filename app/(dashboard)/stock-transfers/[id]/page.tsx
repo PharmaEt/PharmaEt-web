@@ -291,20 +291,35 @@ export default function StockTransferDetailPage() {
             <thead>
               <tr className="border-b border-neutral-200 text-left dark:border-neutral-800">
                 <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500">Product</th>
-                <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 text-right">Requested Qty</th>
-                <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 text-right">Dispatched Qty</th>
-                <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 text-right">Received Qty</th>
+                <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 text-right">Requested Qty (Packs)</th>
+                <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 text-right">Dispatched Qty (Packs)</th>
+                <th className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-neutral-500 text-right">Received Qty (Packs)</th>
               </tr>
             </thead>
             <tbody>
-              {(transfer.items || []).map((item) => (
-                <tr key={item.id} className="border-b border-neutral-200 last:border-b-0 dark:border-neutral-800">
-                  <td className="px-4 py-2.5 text-sm font-medium">{item.product?.name ?? `Product #${item.product_id}`}</td>
-                  <td className="px-4 py-2.5 text-sm text-right font-medium">{item.requested_quantity}</td>
-                  <td className="px-4 py-2.5 text-sm text-right text-neutral-600 dark:text-neutral-400">{item.sent_quantity ?? "—"}</td>
-                  <td className="px-4 py-2.5 text-sm text-right text-neutral-600 dark:text-neutral-400">{item.received_quantity ?? "—"}</td>
-                </tr>
-              ))}
+              {(transfer.items || []).map((item) => {
+                const packSize = (item.product as any)?.pack_size ?? 1;
+                const reqPacks = item.requested_quantity || 0;
+                const sentPacks = item.sent_quantity;
+                const recPacks = item.received_quantity;
+
+                const formatQty = (packs: number | null | undefined) => {
+                  if (packs === null || packs === undefined) return "—";
+                  if (packSize > 1) {
+                    return `${packs} Packs (${packs * packSize} Units)`;
+                  }
+                  return `${packs} Units`;
+                };
+
+                return (
+                  <tr key={item.id} className="border-b border-neutral-200 last:border-b-0 dark:border-neutral-800">
+                    <td className="px-4 py-2.5 text-sm font-medium">{item.product?.name ?? `Product #${item.product_id}`}</td>
+                    <td className="px-4 py-2.5 text-sm text-right font-medium">{formatQty(reqPacks)}</td>
+                    <td className="px-4 py-2.5 text-sm text-right text-neutral-600 dark:text-neutral-400">{formatQty(sentPacks)}</td>
+                    <td className="px-4 py-2.5 text-sm text-right text-neutral-600 dark:text-neutral-400">{formatQty(recPacks)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

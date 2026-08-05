@@ -9,6 +9,8 @@ import { createStockBatch } from "@/lib/api/stock";
 import { getProducts } from "@/lib/api/products";
 import { getSuppliers } from "@/lib/api/suppliers";
 import { getBranches } from "@/lib/api/branches";
+import { extractListData } from "@/lib/api/client";
+import { ProductPicker } from "@/components/ui/product-picker";
 import { type ApiProduct, type ApiSupplier, type ApiBranch } from "@/lib/mock-data";
 
 export default function NewStockAdjustmentPage() {
@@ -41,10 +43,9 @@ export default function NewStockAdjustmentPage() {
           getBranches().catch(() => ({ data: [] })),
         ]);
 
-        const prodList = Array.isArray(prodRes.data) ? prodRes.data : prodRes.data?.data || [];
-        setProducts(prodList);
-        setSuppliers(supRes.data || []);
-        setBranches(branchRes.data || []);
+        setProducts(extractListData<ApiProduct>(prodRes));
+        setSuppliers(extractListData<ApiSupplier>(supRes));
+        setBranches(extractListData<ApiBranch>(branchRes));
       } catch (err: unknown) {
         toast(err instanceof Error ? err.message : "Failed to load form lookups", "error");
       }
@@ -54,6 +55,21 @@ export default function NewStockAdjustmentPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const targetBranch = isOwner ? (form.branch_id ? Number(form.branch_id) : (user?.branch_id ?? null)) : (user?.branch_id ?? null);
+
+    if (!targetBranch) {
+      toast(
+        <span className="flex items-center gap-1.5">
+          <span>Please select a branch or set a Default Operating Branch in your profile.</span>
+          <a href="/profile" className="font-bold underline hover:text-amber-300">
+            Set Branch in Profile →
+          </a>
+        </span>,
+        "error"
+      );
+      return;
+    }
+
     if (!form.product_id || !form.batch_number || !form.purchase_cost || !form.selling_price || !form.quantity) {
       toast("Please fill in all required fields", "error");
       return;
@@ -92,7 +108,7 @@ export default function NewStockAdjustmentPage() {
           <ArrowLeft className="h-4 w-4" />
         </button>
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Stock In Intake</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Stock Intake</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">Add a new stock batch to inventory</p>
         </div>
       </div>
@@ -104,20 +120,12 @@ export default function NewStockAdjustmentPage() {
               <label htmlFor="product" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
                 Select Product
               </label>
-              <select
-                id="product"
-                required
-                value={form.product_id}
-                onChange={(e) => setForm({ ...form, product_id: e.target.value })}
-                className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600 dark:bg-neutral-900"
-              >
-                <option value="">Select product from catalog</option>
-                {products.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({p.sku || "No SKU"})
-                  </option>
-                ))}
-              </select>
+              <ProductPicker
+                products={products}
+                selectedProductId={form.product_id}
+                onSelect={(prod) => setForm({ ...form, product_id: String(prod.id) })}
+                placeholder="Search product by name, generic, SKU, or barcode..."
+              />
             </div>
 
             <div>

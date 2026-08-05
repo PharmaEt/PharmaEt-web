@@ -8,11 +8,28 @@ import { useAuth } from "@/context/auth-context";
 import { getBranches } from "@/lib/api/branches";
 import { getProducts } from "@/lib/api/products";
 import { createStockTransfer } from "@/lib/api/stock-transfers";
+import { extractListData } from "@/lib/api/client";
+import { ProductPicker } from "@/components/ui/product-picker";
 import type { ApiBranch, ApiProduct } from "@/lib/mock-data";
 
 interface ItemRow {
   product_id: number;
   requested_quantity: number;
+}
+
+function formatProductDropdownLabel(p: ApiProduct): string {
+  const details = (p as any).productable;
+  const strength = details?.strength || (p as any).strength;
+  const form = details?.dosage_form || details?.product_type || (p as any).dosage_form || (p as any).product_type;
+  const packSize = p.pack_size ?? 1;
+
+  let label = p.name;
+  if (strength) label += ` ${strength}`;
+  if (form) label += ` (${form})`;
+  label += ` — ${packSize} pcs/pack`;
+  if (p.sku) label += ` [SKU: ${p.sku}]`;
+
+  return label;
 }
 
 export default function NewStockTransferPage() {
@@ -30,9 +47,9 @@ export default function NewStockTransferPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [bRes, pRes] = await Promise.all([getBranches(), getProducts()]);
-        const bList = Array.isArray(bRes.data) ? bRes.data : (bRes.data as any)?.data || [];
-        const pList = Array.isArray(pRes.data) ? pRes.data : (pRes.data as any)?.data || [];
+        const [bRes, pRes] = await Promise.all([getBranches(), getProducts({ all: true })]);
+        const bList = extractListData<ApiBranch>(bRes);
+        const pList = extractListData<ApiProduct>(pRes);
         setBranches(bList);
         setProducts(pList);
         if (user?.branch_id) {
@@ -63,6 +80,20 @@ export default function NewStockTransferPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const effectiveFromBranch = fromBranchId ? Number(fromBranchId) : (user?.branch_id ?? null);
+    if (!effectiveFromBranch) {
+      toast(
+        <span className="flex items-center gap-1.5">
+          <span>Please select a source branch or set a Default Operating Branch in your profile.</span>
+          <a href="/profile" className="font-bold underline hover:text-amber-300">
+            Set Branch in Profile →
+          </a>
+        </span>,
+        "error"
+      );
+      return;
+    }
+
     if (!toBranchId) {
       toast("Please select a target destination branch", "error");
       return;
@@ -178,44 +209,58 @@ export default function NewStockTransferPage() {
           </div>
 
           <div className="space-y-2">
-            {items.map((row, idx) => (
-              <div key={idx} className="flex items-center gap-3">
-                <select
-                  value={row.product_id}
-                  onChange={(e) => updateItemRow(idx, "product_id", Number(e.target.value))}
-                  required
-                  className="flex-1 h-9 rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
-                >
-                  <option value={0}>Select Product</option>
-                  {products.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} ({p.sku})
-                    </option>
-                  ))}
-                </select>
+            {items.map((row, idx) => {
+              const selProd = products.find((p) => Number(p.id) === Number(row.product_id));
+              const packSize = selProd?.pack_size ?? 1;
+              const totalBaseUnits = (row.requested_quantity || 0) * packSize;
 
-                <input
-                  type="number"
-                  min={1}
-                  value={row.requested_quantity}
-                  onChange={(e) => updateItemRow(idx, "requested_quantity", Number(e.target.value))}
-                  placeholder="Qty"
-                  required
-                  className="w-24 h-9 rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
-                />
+              return (
+                <div key={idx} className="flex flex-col gap-1.5 rounded-md border border-neutral-200 p-3 dark:border-neutral-800">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1">
+                      <label className="mb-1 block text-xs font-medium text-neutral-500">Product</label>
+                      <ProductPicker
+                        products={products}
+                        selectedProductId={row.product_id}
+                        onSelect={(prod) => updateItemRow(idx, "product_id", Number(prod.id))}
+                        placeholder="Search product by name, generic, SKU, or barcode..."
+                      />
+                    </div>
 
-                {items.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeItemRow(idx)}
-                    aria-label="Remove item"
-                    className="flex h-9 w-9 items-center justify-center rounded-md text-red-500 hover:bg-red-50 dark:hover:bg-red-950"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            ))}
+                    <div className="w-32">
+                      <label className="mb-1 block text-xs font-medium text-neutral-500">Quantity (Packs)</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={row.requested_quantity}
+                        onChange={(e) => updateItemRow(idx, "requested_quantity", Number(e.target.value))}
+                        placeholder="Packs"
+                        required
+                        className="h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+                      />
+                    </div>
+
+                    {items.length > 1 && (
+                      <div className="pt-5">
+                        <button
+                          type="button"
+                          onClick={() => removeItemRow(idx)}
+                          aria-label="Remove item"
+                          className="flex h-9 w-9 items-center justify-center rounded-md text-red-500 hover:bg-red-50 dark:hover:bg-red-950"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  {packSize > 1 && row.requested_quantity > 0 && (
+                    <p className="text-[10px] text-neutral-500">
+                      Total Inventory Transfer: <strong className="text-neutral-700 dark:text-neutral-300">{totalBaseUnits.toLocaleString()} Base Units</strong> ({row.requested_quantity} Packs × {packSize} units/pack)
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 
