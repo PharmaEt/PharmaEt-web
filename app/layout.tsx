@@ -4,7 +4,7 @@ import { ToastProvider } from "@/components/ui/toast";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "PharmaSys",
+  title: process.env.NEXT_PUBLIC_APP_NAME || "PharmaSys",
   description: "Pharmacy Management System",
 };
 

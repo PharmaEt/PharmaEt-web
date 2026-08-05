@@ -53,7 +53,7 @@ export default function LoginPage() {
       <div className="hidden flex-1 items-center justify-center bg-[#0C0C0C] lg:flex">
         <div className="px-12 text-center">
           <h1 className="text-4xl font-semibold tracking-tight text-white">
-            PharmaSys
+            {process.env.NEXT_PUBLIC_APP_NAME || "PharmaSys"}
           </h1>
           <p className="mt-3 text-sm text-neutral-400">
             Pharmacy Management System
@@ -64,7 +64,7 @@ export default function LoginPage() {
       <div className="flex flex-1 items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm space-y-8">
           <div className="lg:hidden">
-            <h1 className="text-2xl font-semibold tracking-tight">PharmaSys</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">{process.env.NEXT_PUBLIC_APP_NAME || "PharmaSys"}</h1>
           </div>
 
           <div>

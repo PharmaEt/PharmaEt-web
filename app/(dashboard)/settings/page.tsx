@@ -22,8 +22,9 @@ export default function SettingsPage() {
   const [nearExpiryDays, setNearExpiryDays] = useState("90");
 
   // Thermal Receipt Customization
-  const [receiptHeader, setReceiptHeader] = useState("PharmaSys Retail Pharmacy | Bole Branch | TIN: 0045892134");
-  const [receiptFooter, setReceiptFooter] = useState("Thank you for choosing PharmaSys! Wish you good health.");
+  const appName = process.env.NEXT_PUBLIC_APP_NAME || "PharmaSys";
+  const [receiptHeader, setReceiptHeader] = useState(`${appName} Retail Pharmacy | Bole Branch | TIN: 0045892134`);
+  const [receiptFooter, setReceiptFooter] = useState(`Thank you for choosing ${appName}! Wish you good health.`);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
