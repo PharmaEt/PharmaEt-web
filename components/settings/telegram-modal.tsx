@@ -13,9 +13,6 @@ export function TelegramModal({ isOpen, onClose }: TelegramModalProps) {
   const { toast } = useToast();
   const [botToken, setBotToken] = useState("1234567890:ABCdefGhIJKlmNoPQRsTUVwxyZ");
   const [botUsername, setBotUsername] = useState("@PharmaEtBot");
-  const [lowStockAlerts, setLowStockAlerts] = useState(true);
-  const [expiryAlerts, setExpiryAlerts] = useState(true);
-  const [poAlerts, setPoAlerts] = useState(true);
   const [testing, setTesting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -111,39 +108,6 @@ export function TelegramModal({ isOpen, onClose }: TelegramModalProps) {
             <span>
               Staff members manage their own personal Chat IDs under their <b>Profile</b> page to receive password resets and direct alerts.
             </span>
-          </div>
-
-          <div className="space-y-2 pt-2 border-t border-neutral-200 dark:border-neutral-800">
-            <span className="block text-xs font-medium text-neutral-500 mb-1">
-              Global Alert Triggers
-            </span>
-            <label className="flex items-center justify-between text-xs text-neutral-700 dark:text-neutral-300 cursor-pointer">
-              <span>Automated Low Stock Alerts</span>
-              <input
-                type="checkbox"
-                checked={lowStockAlerts}
-                onChange={(e) => setLowStockAlerts(e.target.checked)}
-                className="rounded text-neutral-900 focus:ring-0 dark:bg-neutral-900"
-              />
-            </label>
-            <label className="flex items-center justify-between text-xs text-neutral-700 dark:text-neutral-300 cursor-pointer">
-              <span>Expiry Warnings (30/60 Days)</span>
-              <input
-                type="checkbox"
-                checked={expiryAlerts}
-                onChange={(e) => setExpiryAlerts(e.target.checked)}
-                className="rounded text-neutral-900 focus:ring-0 dark:bg-neutral-900"
-              />
-            </label>
-            <label className="flex items-center justify-between text-xs text-neutral-700 dark:text-neutral-300 cursor-pointer">
-              <span>Purchase Order Telegram Delivery</span>
-              <input
-                type="checkbox"
-                checked={poAlerts}
-                onChange={(e) => setPoAlerts(e.target.checked)}
-                className="rounded text-neutral-900 focus:ring-0 dark:bg-neutral-900"
-              />
-            </label>
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-neutral-200 dark:border-neutral-800">
