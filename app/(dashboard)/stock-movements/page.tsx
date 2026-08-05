@@ -66,7 +66,7 @@ export default function StockMovementsPage() {
       key: "date",
       header: "Date",
       render: (item: any) => (
-        <span className="text-sm">{new Date(item.created_at).toLocaleDateString()}</span>
+        <span className="text-sm">{item.created_at && !isNaN(Date.parse(item.created_at)) ? new Date(item.created_at).toLocaleDateString() : "—"}</span>
       ),
     },
     {
