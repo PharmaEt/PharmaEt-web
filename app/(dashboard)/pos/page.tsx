@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Search, X, Minus, Plus, ShoppingCart, Check, Printer, DollarSign, Clock, Lock, ShieldCheck } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
-import type { ApiMedicine, ApiCosmetic } from "@/lib/mock-data";
+import type { ApiMedicine, ApiCosmetic, ApiCategory } from "@/lib/mock-data";
 import { useAuth } from "@/context/auth-context";
 import { Receipt } from "@/components/ui/receipt";
 import { StartShiftModal } from "@/components/pos/start-shift-modal";
@@ -11,6 +11,7 @@ import { CloseShiftModal, type ShiftSummaryData } from "@/components/pos/close-s
 import { getCurrentShift, openShift, closeShift } from "@/lib/api/shifts";
 import { createSale, getPosProducts, type PosProduct } from "@/lib/api/pos";
 import { getCategories } from "@/lib/api/categories";
+import { extractListData } from "@/lib/api/client";
 
 interface UnifiedProduct {
   id: number;
@@ -36,7 +37,7 @@ interface CartItem {
 }
 
 export default function POSPage() {
-  const { user } = useAuth();
+  const { user, isOwner } = useAuth();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -95,9 +96,8 @@ export default function POSPage() {
         }),
         getCategories(),
       ]);
-      setPosProducts(prodRes.data || []);
-      const rawCats = Array.isArray(catRes.data) ? catRes.data : (catRes.data as any)?.data || [];
-      setCategoriesList(rawCats);
+      setPosProducts(extractListData<PosProduct>(prodRes));
+      setCategoriesList(extractListData<ApiCategory>(catRes));
     } catch (err: unknown) {
       toast(err instanceof Error ? err.message : "Failed to load POS products", "error");
     } finally {
@@ -114,6 +114,18 @@ export default function POSPage() {
   }, [search, activeProductType]);
 
   const handleStartShift = async (floatVal: number, notes?: string) => {
+    if (isOwner && !user?.branch_id) {
+      toast(
+        <span className="flex items-center gap-1.5">
+          <span>Please set a Default Operating Branch before starting a shift.</span>
+          <a href="/profile" className="font-bold underline hover:text-amber-300">
+            Set Branch in Profile →
+          </a>
+        </span>,
+        "error"
+      );
+      return;
+    }
     try {
       await openShift({ opening_balance: floatVal, notes });
       setOpeningFloat(floatVal);
@@ -137,19 +149,27 @@ export default function POSPage() {
     }
   };
 
-  const unifiedProducts: UnifiedProduct[] = posProducts.map((p) => ({
-    id: p.product_id,
-    name: p.name,
-    type: p.type.toLowerCase() as "medicine" | "cosmetic",
-    category_id: p.category?.id ?? 0,
-    pack_size: 1,
-    pack_price: Number(p.selling_price),
-    unit_price: Number(p.selling_price),
-    current_stock: p.available_quantity,
-    min_stock_alert: 5,
-    status: "active",
-    category: p.category ? { name: p.category.name } : null,
-  }));
+  const unifiedProducts: UnifiedProduct[] = posProducts.map((p) => {
+    const packSize = (p as any).pack_size ?? (p as any).details?.pack_size ?? 1;
+    const unitPrice = Number(p.selling_price);
+    const packPrice = (p as any).pack_selling_price
+      ? Number((p as any).pack_selling_price)
+      : Number((unitPrice * packSize).toFixed(2));
+
+    return {
+      id: p.product_id,
+      name: p.name,
+      type: p.type.toLowerCase() as "medicine" | "cosmetic",
+      category_id: p.category?.id ?? 0,
+      pack_size: packSize,
+      pack_price: packPrice,
+      unit_price: unitPrice,
+      current_stock: p.available_quantity,
+      min_stock_alert: 5,
+      status: "active",
+      category: p.category ? { name: p.category.name } : null,
+    };
+  });
 
   const categories = ["all", ...Array.from(new Set(categoriesList.map((c) => c.name)))];
   const productTypes = ["all", "Medicine", "Cosmetic"];
@@ -200,6 +220,18 @@ export default function POSPage() {
   };
 
   const completeSale = async () => {
+    if (isOwner && !user?.branch_id) {
+      toast(
+        <span className="flex items-center gap-1.5">
+          <span>Please set a Default Operating Branch before completing sales.</span>
+          <a href="/profile" className="font-bold underline hover:text-amber-300">
+            Set Branch in Profile →
+          </a>
+        </span>,
+        "error"
+      );
+      return;
+    }
     if (!isShiftOpen) {
       toast("Register shift is closed. Open shift before selling.", "error");
       setStartShiftModalOpen(true);
@@ -217,12 +249,16 @@ export default function POSPage() {
     try {
       const itemsPayload = cart.map((item) => ({
         product_id: item.product.id,
-        quantity: item.quantity,
+        quantity: item.unit === "pack" ? item.quantity * (item.product.pack_size || 1) : item.quantity,
       }));
 
       const res = await createSale({
         payment_type: paymentType.toLowerCase().replace(/ /g, "_"),
         cash_given: paymentType === "Cash" ? cashGiven : undefined,
+        tax: Number(taxAmount.toFixed(2)),
+        tax_rate: 15.0,
+        discount: Number(discountAmount.toFixed(2)),
+        discount_rate: discountPercent,
         items: itemsPayload,
       });
 
@@ -263,6 +299,21 @@ export default function POSPage() {
 
   return (
     <div className="space-y-3">
+      {isOwner && !user?.branch_id && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-md border border-amber-200/80 bg-amber-50/90 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="font-semibold shrink-0">⚠️ Default Branch Required:</span>
+            <span className="truncate text-amber-700 dark:text-amber-300">Link operations to a branch for accurate audits.</span>
+          </div>
+          <a
+            href="/profile"
+            className="inline-flex items-center justify-center shrink-0 rounded bg-amber-600 px-2.5 py-1 text-[11px] font-medium text-white transition-colors hover:bg-amber-700 dark:bg-amber-500 dark:text-black dark:hover:bg-amber-400"
+          >
+            Set Branch in Profile →
+          </a>
+        </div>
+      )}
+
       {/* Active Shift Header Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-[#0A0A0A]">
         {isShiftOpen ? (

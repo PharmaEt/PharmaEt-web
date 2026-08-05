@@ -58,6 +58,10 @@ export async function getPosProducts(params?: {
 export async function createSale(payload: {
   payment_type: string;
   cash_given?: number;
+  tax?: number;
+  tax_rate?: number;
+  discount?: number;
+  discount_rate?: number;
   prescription_image?: string;
   items: { product_id?: number; stock_id?: number; quantity: number }[];
 }): Promise<{ message: string; data: ApiSale }> {

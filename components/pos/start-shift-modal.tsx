@@ -54,7 +54,7 @@ export function StartShiftModal({ isOpen, onStartShift, cashierName }: StartShif
               <input
                 type="number"
                 min="0"
-                step="10"
+                step="0.01"
                 required
                 placeholder="1000"
                 value={openingFloat}

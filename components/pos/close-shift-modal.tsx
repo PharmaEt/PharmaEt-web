@@ -109,7 +109,7 @@ export function CloseShiftModal({
             <input
               type="number"
               min="0"
-              step="1"
+              step="0.01"
               required
               value={countedCash}
               onChange={(e) => setCountedCash(e.target.value)}
