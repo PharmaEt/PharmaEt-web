@@ -97,7 +97,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           }`}
       >
         <div className="flex h-[52px] items-center gap-2 px-4">
-          <span className="text-lg font-medium text-neutral-200">PharmaET</span>
+          <span className="text-lg font-medium text-neutral-200">PharmaSys</span>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 pb-4">

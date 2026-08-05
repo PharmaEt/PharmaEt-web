@@ -4,7 +4,7 @@ import { ToastProvider } from "@/components/ui/toast";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "PharmaET",
+  title: "PharmaSys",
   description: "Pharmacy Management System",
 };
 
