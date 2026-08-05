@@ -12,7 +12,6 @@ import {
   Pill,
   Sparkles,
   Package,
-  AlertTriangle,
   ArrowLeftRight,
   ClipboardList,
   ShoppingCart,
@@ -55,7 +54,6 @@ const navSections: NavSection[] = [
     label: "Inventory",
     items: [
       { label: "Stock", href: "/stock", icon: Package },
-      { label: "Stock Alerts", href: "/stock#alerts", icon: AlertTriangle },
       { label: "Stock Movements", href: "/stock-movements", icon: ArrowLeftRight },
       { label: "Stock Transfers", href: "/stock-transfers", icon: ArrowLeftRight },
       { label: "Purchase Orders", href: "/purchase-orders", icon: ClipboardList },
@@ -113,10 +111,10 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                 return ["/", "/pos", "/sales", "/sales/shifts"].includes(item.href);
               }
               if (role === "pharmacist") {
-                return ["/", "/pos", "/sales", "/sales/shifts", "/medicines", "/cosmetics", "/categories", "/stock", "/stock#alerts"].includes(item.href);
+                return ["/", "/pos", "/sales", "/sales/shifts", "/medicines", "/cosmetics", "/categories", "/stock"].includes(item.href);
               }
               if (role === "inventory_officer") {
-                return ["/", "/stock", "/stock#alerts", "/stock-movements", "/purchase-orders", "/medicines", "/cosmetics", "/suppliers", "/categories"].includes(item.href);
+                return ["/", "/stock", "/stock-movements", "/purchase-orders", "/medicines", "/cosmetics", "/suppliers", "/categories"].includes(item.href);
               }
               if (role === "manager") {
                 return true;

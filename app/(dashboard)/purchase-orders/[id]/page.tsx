@@ -183,10 +183,15 @@ export default function PurchaseOrderDetailPage() {
                 po.items.map((item) => {
                   const costPerPack = parseFloat(String(item.cost_per_pack)) || 0;
                   const lineTotal = (item.quantity_pack || 0) * costPerPack;
+                  const packSize = (item.product as any)?.pack_size ?? 1;
+                  const totalBaseUnits = (item.quantity_pack || 0) * packSize;
+
                   return (
                     <tr key={item.id} className="border-b border-border last:border-b-0">
                       <td className="px-4 py-2.5 text-sm font-medium">{item.product?.name ?? `Product #${item.product_id}`}</td>
-                      <td className="px-4 py-2.5 text-sm text-right text-neutral-600 dark:text-neutral-400">{item.quantity_pack}</td>
+                      <td className="px-4 py-2.5 text-sm text-right text-neutral-600 dark:text-neutral-400">
+                        {item.quantity_pack} Packs {packSize > 1 ? `(${totalBaseUnits.toLocaleString()} Units)` : ""}
+                      </td>
                       <td className="px-4 py-2.5 text-sm text-right text-neutral-600 dark:text-neutral-400">{costPerPack.toLocaleString()} ETB</td>
                       <td className="px-4 py-2.5 text-sm text-right font-medium">{lineTotal.toLocaleString()} ETB</td>
                     </tr>

@@ -9,12 +9,29 @@ import { getSuppliers } from "@/lib/api/suppliers";
 import { getBranches } from "@/lib/api/branches";
 import { getProducts } from "@/lib/api/products";
 import { createPurchaseOrder } from "@/lib/api/purchase-orders";
+import { extractListData } from "@/lib/api/client";
+import { ProductPicker } from "@/components/ui/product-picker";
 import type { ApiSupplier, ApiBranch, ApiProduct } from "@/lib/mock-data";
 
 interface POItem {
   product_id: string;
   ordered_quantity_pack: string;
   unit_cost: string;
+}
+
+function formatProductDropdownLabel(p: ApiProduct): string {
+  const details = (p as any).productable;
+  const strength = details?.strength || (p as any).strength;
+  const form = details?.dosage_form || details?.product_type || (p as any).dosage_form || (p as any).product_type;
+  const packSize = p.pack_size ?? 1;
+
+  let label = p.name;
+  if (strength) label += ` ${strength}`;
+  if (form) label += ` (${form})`;
+  label += ` — ${packSize} pcs/pack`;
+  if (p.sku) label += ` [SKU: ${p.sku}]`;
+
+  return label;
 }
 
 export default function NewPurchaseOrderPage() {
@@ -46,16 +63,12 @@ export default function NewPurchaseOrderPage() {
         const [supRes, branchRes, prodRes] = await Promise.all([
           getSuppliers(),
           getBranches().catch(() => ({ data: [] })),
-          getProducts(),
+          getProducts({ all: true }),
         ]);
 
-        const supList = Array.isArray(supRes.data) ? supRes.data : (supRes.data as any)?.data || [];
-        const branchList = Array.isArray(branchRes.data) ? branchRes.data : (branchRes.data as any)?.data || [];
-        const prodList = Array.isArray(prodRes.data) ? prodRes.data : (prodRes.data as any)?.data || [];
-
-        setSuppliers(supList);
-        setBranches(branchList);
-        setProducts(prodList);
+        setSuppliers(extractListData<ApiSupplier>(supRes));
+        setBranches(extractListData<ApiBranch>(branchRes));
+        setProducts(extractListData<ApiProduct>(prodRes));
       } catch (err: unknown) {
         toast(err instanceof Error ? err.message : "Failed to load order form data", "error");
       } finally {
@@ -91,6 +104,20 @@ export default function NewPurchaseOrderPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const effectiveBranch = isOwner ? (form.branch_id ? Number(form.branch_id) : (user?.branch_id ?? null)) : (user?.branch_id ?? null);
+    if (!effectiveBranch) {
+      toast(
+        <span className="flex items-center gap-1.5">
+          <span>Please select a branch or set a Default Operating Branch in your profile.</span>
+          <a href="/profile" className="font-bold underline hover:text-amber-300">
+            Set Branch in Profile →
+          </a>
+        </span>,
+        "error"
+      );
+      return;
+    }
+
     if (!form.supplier_id) {
       toast("Please select a supplier", "error");
       return;
@@ -225,19 +252,12 @@ export default function NewPurchaseOrderPage() {
                   <div className="grid gap-3 sm:grid-cols-3">
                     <div className="sm:col-span-3">
                       <label className="mb-1 block text-xs font-medium text-neutral-500">Product</label>
-                      <select
-                        required
-                        value={item.product_id}
-                        onChange={(e) => updateItem(index, "product_id", e.target.value)}
-                        className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
-                      >
-                        <option value="">Select catalog product</option>
-                        {products.map((prod) => (
-                          <option key={prod.id} value={prod.id}>
-                            {prod.name}
-                          </option>
-                        ))}
-                      </select>
+                      <ProductPicker
+                        products={products}
+                        selectedProductId={item.product_id}
+                        onSelect={(prod) => updateItem(index, "product_id", String(prod.id))}
+                        placeholder="Search product by name, generic, SKU, or barcode..."
+                      />
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-neutral-500">Quantity (Packs)</label>
@@ -252,7 +272,7 @@ export default function NewPurchaseOrderPage() {
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-neutral-500">Unit Cost (ETB)</label>
+                      <label className="mb-1 block text-xs font-medium text-neutral-500">Cost per Pack (ETB)</label>
                       <input
                         type="number"
                         min="0"
@@ -263,6 +283,19 @@ export default function NewPurchaseOrderPage() {
                         placeholder="e.g. 150.00"
                         className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
                       />
+                      {(() => {
+                        const selProd = products.find((p) => String(p.id) === String(item.product_id));
+                        const packSize = selProd?.pack_size ?? 1;
+                        const costPerPack = parseFloat(item.unit_cost) || 0;
+                        if (packSize > 1 && costPerPack > 0) {
+                          return (
+                            <p className="mt-1 text-[10px] text-neutral-500">
+                              Base Unit Cost: ETB {(costPerPack / packSize).toFixed(2)} / unit ({packSize} pcs/pack)
+                            </p>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-neutral-500">Line Subtotal</label>

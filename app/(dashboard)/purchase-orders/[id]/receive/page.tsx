@@ -173,6 +173,9 @@ export default function ReceivePage() {
           quantity_pack: receiveNow[item.id],
           batch_number: formData[item.id]?.batch ? formData[item.id].batch.trim() : undefined,
           expiry_date: formData[item.id]?.expiry || undefined,
+          cost_per_pack: formData[item.id]?.costPerPack ?? (parseFloat(String(item.cost_per_pack)) || 0),
+          pack_selling_price: formData[item.id]?.packPrice ?? undefined,
+          selling_price: formData[item.id]?.singlePrice ?? undefined,
         }));
 
       if (receiveItems.length === 0) {
