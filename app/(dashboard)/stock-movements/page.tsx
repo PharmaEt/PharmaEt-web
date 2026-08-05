@@ -129,9 +129,12 @@ export default function StockMovementsPage() {
     {
       key: "branch",
       header: "Branch",
-      render: (item: any) => (
-        <span className="text-neutral-500 text-sm">{item.stock?.branch?.name ?? "—"}</span>
-      ),
+      render: (item: any) => {
+        const branchName = item.stock?.branch?.name || item.branch?.name || null;
+        return (
+          <span className="text-neutral-500 text-sm">{branchName ?? item.branch_id ?? "—"}</span>
+        );
+      },
       hideOnMobile: true,
     },
   ];
