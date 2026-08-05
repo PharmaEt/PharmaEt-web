@@ -4,67 +4,113 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface PaginationProps {
   currentPage: number;
-  totalPages: number;
+  lastPage: number;
+  total: number;
+  perPage: number;
   onPageChange: (page: number) => void;
-  totalItems?: number;
-  itemsPerPage?: number;
+  onPerPageChange?: (perPage: number) => void;
 }
 
 export function Pagination({
   currentPage,
-  totalPages,
+  lastPage,
+  total,
+  perPage,
   onPageChange,
-  totalItems,
-  itemsPerPage = 10,
+  onPerPageChange,
 }: PaginationProps) {
-  if (totalPages <= 1) return null;
+  if (total <= 0) return null;
 
-  const startItem = (currentPage - 1) * itemsPerPage + 1;
-  const endItem = Math.min(currentPage * itemsPerPage, totalItems ?? currentPage * itemsPerPage);
+  const startItem = (currentPage - 1) * perPage + 1;
+  const endItem = Math.min(currentPage * perPage, total);
+
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    const maxVisible = 5;
+
+    if (lastPage <= maxVisible) {
+      for (let i = 1; i <= lastPage; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (currentPage > 3) pages.push("...");
+
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(lastPage - 1, currentPage + 1);
+
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+
+      if (currentPage < lastPage - 2) pages.push("...");
+      pages.push(lastPage);
+    }
+
+    return pages;
+  };
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-      <div className="text-xs text-neutral-500">
-        Showing <span className="font-medium text-neutral-900 dark:text-neutral-200">{startItem}</span> to{" "}
-        <span className="font-medium text-neutral-900 dark:text-neutral-200">{endItem}</span>
-        {totalItems !== undefined && (
-          <>
-            {" "}of <span className="font-medium text-neutral-900 dark:text-neutral-200">{totalItems}</span> results
-          </>
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-1 py-3 text-xs border-t border-border mt-3">
+      <div className="flex items-center justify-between sm:justify-start gap-3 text-neutral-500">
+        <span>
+          Showing <strong className="font-semibold text-neutral-900 dark:text-neutral-100">{startItem}</strong> to{" "}
+          <strong className="font-semibold text-neutral-900 dark:text-neutral-100">{endItem}</strong> of{" "}
+          <strong className="font-semibold text-neutral-900 dark:text-neutral-100">{total}</strong> results
+        </span>
+
+        {onPerPageChange && (
+          <div className="flex items-center gap-1.5 ml-2">
+            <span>Per page:</span>
+            <select
+              value={perPage}
+              onChange={(e) => onPerPageChange(Number(e.target.value))}
+              className="h-7 rounded border border-neutral-200 bg-transparent px-1.5 text-xs focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:bg-neutral-900"
+            >
+              <option value={10}>10</option>
+              <option value={15}>15</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
         )}
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center justify-center gap-1">
         <button
           onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-          aria-label="Previous page"
-          className="flex h-8 w-8 items-center justify-center rounded-md border border-neutral-200 text-neutral-600 transition-colors hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-900"
+          disabled={currentPage <= 1}
+          aria-label="Previous Page"
+          className="inline-flex h-7 w-7 items-center justify-center rounded border border-neutral-200 bg-white text-neutral-600 transition hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-3.5 w-3.5" />
         </button>
 
-        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-          <button
-            key={page}
-            onClick={() => onPageChange(page)}
-            className={`flex h-8 min-w-8 items-center justify-center rounded-md px-2 text-xs font-medium transition-colors ${
-              currentPage === page
-                ? "bg-neutral-900 text-white dark:bg-white dark:text-black"
-                : "border border-neutral-200 text-neutral-600 hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-900"
-            }`}
-          >
-            {page}
-          </button>
-        ))}
+        {getPageNumbers().map((p, idx) =>
+          typeof p === "number" ? (
+            <button
+              key={idx}
+              onClick={() => onPageChange(p)}
+              className={`h-7 min-w-[28px] px-2 rounded border text-xs font-medium transition ${
+                currentPage === p
+                  ? "border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-black"
+                  : "border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800"
+              }`}
+            >
+              {p}
+            </button>
+          ) : (
+            <span key={idx} className="px-1 text-neutral-400">
+              ...
+            </span>
+          )
+        )}
 
         <button
           onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
-          aria-label="Next page"
-          className="flex h-8 w-8 items-center justify-center rounded-md border border-neutral-200 text-neutral-600 transition-colors hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-900"
+          disabled={currentPage >= lastPage}
+          aria-label="Next Page"
+          className="inline-flex h-7 w-7 items-center justify-center rounded border border-neutral-200 bg-white text-neutral-600 transition hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800"
         >
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="h-3.5 w-3.5" />
         </button>
       </div>
     </div>

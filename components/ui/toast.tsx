@@ -7,12 +7,12 @@ type ToastType = "success" | "error" | "info";
 
 interface Toast {
   id: string;
-  message: string;
+  message: React.ReactNode;
   type: ToastType;
 }
 
 interface ToastContextValue {
-  toast: (message: string, type?: ToastType) => void;
+  toast: (message: React.ReactNode, type?: ToastType) => void;
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -26,7 +26,7 @@ export function useToast() {
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const toast = useCallback((message: string, type: ToastType = "success") => {
+  const toast = useCallback((message: React.ReactNode, type: ToastType = "success") => {
     const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     setToasts((prev) => [...prev, { id, message, type }]);
   }, []);
@@ -52,18 +52,22 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ toast }}>
       {children}
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+      <div className="fixed bottom-3 left-3 right-3 sm:left-auto sm:right-4 sm:bottom-4 z-50 flex flex-col gap-2 pointer-events-none">
         {toasts.map((t) => (
           <div
             key={t.id}
-            className="flex items-center gap-2.5 rounded-lg border border-neutral-200 bg-white px-4 py-3 shadow-lg dark:border-neutral-800 dark:bg-[#0A0A0A]"
+            className="pointer-events-auto flex items-center justify-between gap-2.5 rounded-lg border border-neutral-200/90 bg-white/95 px-3 py-2 sm:px-4 sm:py-2.5 shadow-xl backdrop-blur-md dark:border-neutral-800/90 dark:bg-[#0A0A0A]/95 text-xs sm:text-sm"
           >
-            {icons[t.type]}
-            <span className="text-sm text-neutral-700 dark:text-neutral-300">{t.message}</span>
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <span className="shrink-0">{icons[t.type]}</span>
+              <div className="text-neutral-800 dark:text-neutral-200 font-medium leading-tight break-words">
+                {t.message}
+              </div>
+            </div>
             <button
               onClick={() => dismiss(t.id)}
               aria-label="Dismiss"
-              className="ml-2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
+              className="shrink-0 rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-200 transition-colors"
             >
               <X className="h-3.5 w-3.5" />
             </button>

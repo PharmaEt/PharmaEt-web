@@ -13,6 +13,7 @@ interface DataTableProps<T> {
   data: T[];
   loading?: boolean;
   emptyMessage?: string;
+  onRowClick?: (item: T) => void;
 }
 
 export function DataTable<T extends { id: number }>({
@@ -20,8 +21,11 @@ export function DataTable<T extends { id: number }>({
   data,
   loading = false,
   emptyMessage = "No data found",
+  onRowClick,
 }: DataTableProps<T>) {
-  if (loading) {
+  const showSkeleton = loading || emptyMessage.toLowerCase().includes("loading");
+
+  if (showSkeleton) {
     return (
       <div className="rounded-lg border border-border overflow-x-auto">
         <table className="w-full min-w-0">
@@ -82,9 +86,10 @@ export function DataTable<T extends { id: number }>({
           {data.map((item, index) => (
             <tr
               key={item.id}
+              onClick={() => onRowClick?.(item)}
               className={`border-b border-neutral-100 dark:border-neutral-900 transition-colors duration-100 hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 ${
-                index === data.length - 1 ? "border-b-0" : ""
-              }`}
+                onRowClick ? "cursor-pointer" : ""
+              } ${index === data.length - 1 ? "border-b-0" : ""}`}
             >
               {columns.map((col) => (
                 <td key={col.key} className={`px-3 sm:px-4 py-3 text-sm whitespace-nowrap ${col.hideOnMobile ? "hidden lg:table-cell" : ""} ${col.className || ""}`}>
