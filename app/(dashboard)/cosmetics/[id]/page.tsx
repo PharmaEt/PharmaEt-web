@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/context/auth-context";
 import { getCosmetic, updateCosmetic } from "@/lib/api/cosmetics";
 import { getCategories } from "@/lib/api/categories";
+import { extractListData } from "@/lib/api/client";
 import { type ApiProduct, type ApiCategory } from "@/lib/mock-data";
 
 export default function CosmeticDetailPage() {
@@ -44,7 +45,7 @@ export default function CosmeticDetailPage() {
       ]);
       const data = res.data;
       setCosmetic(data);
-      setCategories((catRes.data || []).filter((c) => c.type === "cosmetic"));
+      setCategories(extractListData<ApiCategory>(catRes).filter((c) => c.type === "cosmetic"));
 
       const cosmeticDetails = data.productable as { product_type?: string; size?: string; unit?: string; color?: string; shade?: string; ingredients?: string } | undefined;
       setForm({

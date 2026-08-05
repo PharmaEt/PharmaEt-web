@@ -8,6 +8,7 @@ import { useAuth } from "@/context/auth-context";
 import { createMedicine } from "@/lib/api/medicines";
 import { getCategories } from "@/lib/api/categories";
 import { getBranches } from "@/lib/api/branches";
+import { extractListData } from "@/lib/api/client";
 import { type ApiCategory, type ApiBranch } from "@/lib/mock-data";
 
 export default function NewMedicinePage() {
@@ -41,8 +42,8 @@ export default function NewMedicinePage() {
           getCategories({ type: "medicine" }).catch(() => ({ data: [] })),
           getBranches().catch(() => ({ data: [] })),
         ]);
-        setCategories((catRes.data || []).filter((c) => c.type === "medicine"));
-        setBranches(branchRes.data || []);
+        setCategories(extractListData<ApiCategory>(catRes).filter((c) => c.type === "medicine"));
+        setBranches(extractListData<ApiBranch>(branchRes));
       } catch (err: unknown) {
         toast(err instanceof Error ? err.message : "Failed to load form lookups", "error");
       }

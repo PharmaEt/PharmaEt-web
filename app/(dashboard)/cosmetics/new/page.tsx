@@ -8,6 +8,7 @@ import { useAuth } from "@/context/auth-context";
 import { createCosmetic } from "@/lib/api/cosmetics";
 import { getCategories } from "@/lib/api/categories";
 import { getBranches } from "@/lib/api/branches";
+import { extractListData } from "@/lib/api/client";
 import { type ApiCategory, type ApiBranch } from "@/lib/mock-data";
 
 export default function NewCosmeticPage() {
@@ -43,8 +44,8 @@ export default function NewCosmeticPage() {
           getCategories({ type: "cosmetic" }).catch(() => ({ data: [] })),
           getBranches().catch(() => ({ data: [] })),
         ]);
-        setCategories((catRes.data || []).filter((c) => c.type === "cosmetic"));
-        setBranches(branchRes.data || []);
+        setCategories(extractListData<ApiCategory>(catRes).filter((c) => c.type === "cosmetic"));
+        setBranches(extractListData<ApiBranch>(branchRes));
       } catch (err: unknown) {
         toast(err instanceof Error ? err.message : "Failed to load form lookups", "error");
       }

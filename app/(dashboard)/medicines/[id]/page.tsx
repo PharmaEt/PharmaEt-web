@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/context/auth-context";
 import { getMedicine, updateMedicine } from "@/lib/api/medicines";
 import { getCategories } from "@/lib/api/categories";
+import { extractListData } from "@/lib/api/client";
 import { type ApiProduct, type ApiCategory } from "@/lib/mock-data";
 
 export default function MedicineDetailPage() {
@@ -42,7 +43,7 @@ export default function MedicineDetailPage() {
       ]);
       const data = res.data;
       setMedicine(data);
-      setCategories((catRes.data || []).filter((c) => c.type === "medicine"));
+      setCategories(extractListData<ApiCategory>(catRes).filter((c) => c.type === "medicine"));
 
       const medicineDetails = data.productable as { generic_name?: string; strength?: string; dosage_form?: string; is_prescription_required?: boolean } | undefined;
       setForm({
