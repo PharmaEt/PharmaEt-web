@@ -4,6 +4,8 @@ export interface ApiSettings {
   id?: number;
   branch_id?: number | null;
   expiry_alert_days: number;
+  telegram_bot_token?: string;
+  telegram_bot_username?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -39,7 +41,7 @@ export async function getSettings(params?: { branch_id?: string | number }): Pro
 }
 
 export async function updateSettings(
-  payload: { expiry_alert_days: number; branch_id?: number | null },
+  payload: { expiry_alert_days: number; branch_id?: number | null; telegram_bot_token?: string; telegram_bot_username?: string },
   params?: { branch_id?: string | number }
 ): Promise<{ message: string; data: ApiSettings }> {
   const resolvedBranchId = getResolvedBranchId(params?.branch_id ?? payload.branch_id);

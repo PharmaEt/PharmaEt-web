@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Send, Bot, ShieldAlert } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
+import { useAuth } from "@/context/auth-context";
+import { getSettings, updateSettings } from "@/lib/api/settings";
 
 interface TelegramModalProps {
   isOpen: boolean;
@@ -11,10 +13,30 @@ interface TelegramModalProps {
 
 export function TelegramModal({ isOpen, onClose }: TelegramModalProps) {
   const { toast } = useToast();
-  const [botToken, setBotToken] = useState("1234567890:ABCdefGhIJKlmNoPQRsTUVwxyZ");
-  const [botUsername, setBotUsername] = useState("@PharmaEtBot");
+  const { user } = useAuth();
+  const [botToken, setBotToken] = useState("");
+  const [botUsername, setBotUsername] = useState("");
   const [testing, setTesting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    async function load() {
+      setLoading(true);
+      try {
+        const res = await getSettings({ branch_id: user?.branch_id || 1 });
+        setBotToken(res.data?.telegram_bot_token || "");
+        setBotUsername(res.data?.telegram_bot_username || "");
+      } catch {
+        setBotToken("");
+        setBotUsername("");
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [isOpen, user?.branch_id]);
 
   if (!isOpen) return null;
 
@@ -30,14 +52,27 @@ export function TelegramModal({ isOpen, onClose }: TelegramModalProps) {
     }, 700);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    setTimeout(() => {
-      setSubmitting(false);
-      toast("Global Telegram Bot settings updated!", "success");
+    try {
+      const branchId = user?.branch_id || 1;
+      await updateSettings(
+        {
+          expiry_alert_days: 90,
+          branch_id: branchId,
+          telegram_bot_token: botToken,
+          telegram_bot_username: botUsername,
+        },
+        { branch_id: branchId }
+      );
+      toast("Telegram Bot settings saved!", "success");
       onClose();
-    }, 600);
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed to save Telegram settings", "error");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -76,12 +111,13 @@ export function TelegramModal({ isOpen, onClose }: TelegramModalProps) {
                 placeholder="1234567890:ABCdefGhIJKlmNoPQRsTUVwxyZ"
                 value={botToken}
                 onChange={(e) => setBotToken(e.target.value)}
-                className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:bg-[#0A0A0A]"
+                disabled={loading}
+                className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:bg-[#0A0A0A] disabled:opacity-50"
               />
               <button
                 type="button"
                 onClick={handleTestBot}
-                disabled={testing}
+                disabled={testing || loading}
                 className="flex h-9 items-center gap-1 rounded-md border border-neutral-200 px-3 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-900"
               >
                 <Send className="h-3.5 w-3.5" />
@@ -99,7 +135,8 @@ export function TelegramModal({ isOpen, onClose }: TelegramModalProps) {
               placeholder="@PharmaEtBot"
               value={botUsername}
               onChange={(e) => setBotUsername(e.target.value)}
-              className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:bg-[#0A0A0A]"
+              disabled={loading}
+              className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:bg-[#0A0A0A] disabled:opacity-50"
             />
           </div>
 
@@ -120,7 +157,7 @@ export function TelegramModal({ isOpen, onClose }: TelegramModalProps) {
             </button>
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || loading}
               className="h-9 rounded-md bg-neutral-900 px-4 text-xs font-medium text-white hover:bg-neutral-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
             >
               {submitting ? "Saving..." : "Save Bot Token"}
