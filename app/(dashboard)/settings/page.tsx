@@ -10,7 +10,7 @@ import { DollarSign, Bell, Receipt, Bot, Save } from "lucide-react";
 
 export default function SettingsPage() {
   const { toast } = useToast();
-  const { isOwner } = useAuth();
+  const { isOwner, user } = useAuth();
   const [isTelegramOpen, setIsTelegramOpen] = useState(false);
 
   // Financial & Tax Settings
@@ -32,7 +32,8 @@ export default function SettingsPage() {
     async function loadSettings() {
       setIsLoading(true);
       try {
-        const res = await getSettings();
+        const branchId = user?.branch_id || 1;
+        const res = await getSettings({ branch_id: branchId });
         if (res.data?.expiry_alert_days) {
           setNearExpiryDays(String(res.data.expiry_alert_days));
         }
@@ -43,15 +44,20 @@ export default function SettingsPage() {
       }
     }
     loadSettings();
-  }, []);
+  }, [user, toast]);
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     try {
-      await updateSettings({
-        expiry_alert_days: Number(nearExpiryDays) || 90,
-      });
+      const branchId = user?.branch_id || 1;
+      await updateSettings(
+        {
+          expiry_alert_days: Number(nearExpiryDays) || 90,
+          branch_id: branchId,
+        },
+        { branch_id: branchId }
+      );
       toast("Branch & System settings updated successfully!", "success");
     } catch (err: unknown) {
       toast(err instanceof Error ? err.message : "Failed to update settings", "error");

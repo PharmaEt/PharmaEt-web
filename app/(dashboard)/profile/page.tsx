@@ -5,6 +5,7 @@ import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/ui/page-header";
 import { getBranches } from "@/lib/api/branches";
+import { extractListData } from "@/lib/api/client";
 import type { ApiUser, ApiBranch } from "@/lib/mock-data";
 import { Send } from "lucide-react";
 import { updateProfile, updatePassword, testTelegram } from "@/lib/api/auth";
@@ -30,8 +31,7 @@ export default function ProfilePage() {
     async function loadBranches() {
       try {
         const res = await getBranches();
-        const list = Array.isArray(res.data) ? res.data : (res.data as any)?.data || [];
-        setBranches(list);
+        setBranches(extractListData<ApiBranch>(res));
       } catch {
         // Silent error
       }
@@ -140,6 +140,12 @@ export default function ProfilePage() {
               <p className="text-xs text-neutral-500 capitalize">{user?.role?.replace("_", " ")}</p>
             </div>
           </div>
+
+          {isOwner && !user?.branch_id && (
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300">
+              <span className="font-semibold">⚠️ Action Required:</span> Please select a <strong>Default Operating Branch</strong> below. Setting a default branch ensures all your stock intakes, transfers, and POS sales are accurately recorded for inventory audits and financial reports.
+            </div>
+          )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
