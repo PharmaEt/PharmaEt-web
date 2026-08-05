@@ -52,10 +52,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen bg-[#FAFAFA] dark:bg-[#0A0A0A]">
       <div className="hidden flex-1 items-center justify-center bg-[#0C0C0C] lg:flex">
         <div className="px-12 text-center">
-          <span className="inline-flex h-10 items-center rounded bg-white px-2 text-lg font-semibold text-black">
-            Rx
-          </span>
-          <h1 className="mt-6 text-4xl font-semibold tracking-tight text-white">
+          <h1 className="text-4xl font-semibold tracking-tight text-white">
             PharmaET
           </h1>
           <p className="mt-3 text-sm text-neutral-400">
@@ -67,9 +64,7 @@ export default function LoginPage() {
       <div className="flex flex-1 items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm space-y-8">
           <div className="lg:hidden">
-            <span className="inline-flex h-8 items-center rounded bg-neutral-900 px-2 text-sm font-semibold text-white dark:bg-neutral-100 dark:text-black">
-              Rx
-            </span>
+            <h1 className="text-2xl font-semibold tracking-tight">PharmaET</h1>
           </div>
 
           <div>
