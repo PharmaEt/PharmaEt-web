@@ -9,6 +9,8 @@ import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/context/auth-context";
 import { getBranches } from "@/lib/api/branches";
 import { getStockTransfers, type ApiStockTransfer } from "@/lib/api/stock-transfers";
+import { extractListData, extractPaginationMeta } from "@/lib/api/client";
+import { Pagination } from "@/components/ui/pagination";
 import type { ApiBranch } from "@/lib/mock-data";
 import { formatDate } from "@/lib/utils";
 
@@ -22,12 +24,15 @@ export default function StockTransfersPage() {
   const [branches, setBranches] = useState<ApiBranch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+  const [meta, setMeta] = useState({ currentPage: 1, lastPage: 1, total: 0, perPage: 15 });
+
   useEffect(() => {
     async function loadBranches() {
       try {
         const res = await getBranches();
-        const list = Array.isArray(res.data) ? res.data : (res.data as any)?.data || [];
-        setBranches(list);
+        setBranches(extractListData<ApiBranch>(res));
       } catch {
         // Silent error
       }
@@ -46,9 +51,12 @@ export default function StockTransfersPage() {
     try {
       const res = await getStockTransfers({
         status: statusFilter !== "all" ? statusFilter : undefined,
+        page,
+        per_page: perPage,
       });
-      const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
+      const list = extractListData<ApiStockTransfer>(res);
       setTransfers(list);
+      setMeta(extractPaginationMeta(res, list.length));
     } catch (err: unknown) {
       toast(err instanceof Error ? err.message : "Failed to load stock transfers", "error");
     } finally {
@@ -58,7 +66,7 @@ export default function StockTransfersPage() {
 
   useEffect(() => {
     fetchTransfers();
-  }, [statusFilter]);
+  }, [statusFilter, page, perPage]);
 
   const filtered = transfers.filter((t) => {
     const term = search.toLowerCase();
@@ -201,6 +209,17 @@ export default function StockTransfersPage() {
       </div>
 
       <DataTable columns={columns} data={filtered} emptyMessage={isLoading ? "Loading stock transfers..." : "No stock transfers found"} />
+      <Pagination
+        currentPage={meta.currentPage}
+        lastPage={meta.lastPage}
+        total={meta.total}
+        perPage={meta.perPage}
+        onPageChange={(p) => setPage(p)}
+        onPerPageChange={(pp) => {
+          setPerPage(pp);
+          setPage(1);
+        }}
+      />
     </div>
   );
 }

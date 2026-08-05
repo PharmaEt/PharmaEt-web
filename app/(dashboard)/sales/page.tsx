@@ -7,6 +7,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { useToast } from "@/components/ui/toast";
 import { getSales, type ApiSale } from "@/lib/api/pos";
+import { extractListData, extractPaginationMeta } from "@/lib/api/client";
+import { Pagination } from "@/components/ui/pagination";
 import { formatDate } from "@/lib/utils";
 
 export default function SalesPage() {
@@ -16,12 +18,17 @@ export default function SalesPage() {
   const [sales, setSales] = useState<ApiSale[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+  const [meta, setMeta] = useState({ currentPage: 1, lastPage: 1, total: 0, perPage: 15 });
+
   const fetchSales = async () => {
     setIsLoading(true);
     try {
-      const res = await getSales();
-      const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
+      const res = await getSales({ page, page_size: perPage } as any);
+      const list = extractListData<ApiSale>(res);
       setSales(list);
+      setMeta(extractPaginationMeta(res, list.length));
     } catch (err: unknown) {
       toast(err instanceof Error ? err.message : "Failed to load sales history", "error");
     } finally {
@@ -31,7 +38,7 @@ export default function SalesPage() {
 
   useEffect(() => {
     fetchSales();
-  }, []);
+  }, [page, perPage]);
 
   const filtered = sales.filter((s) => {
     const cashierName = s.served_by?.name ?? "";
@@ -43,56 +50,48 @@ export default function SalesPage() {
       key: "row_num",
       header: "#",
       render: (_: ApiSale, index: number) => (
-        <span className="font-medium text-sm text-neutral-500">#{index + 1}</span>
+        <span className="font-medium text-sm text-neutral-500">#{(page - 1) * perPage + index + 1}</span>
       ),
     },
     {
       key: "id",
-      header: "Sale #",
+      header: "Receipt #",
       render: (item: ApiSale) => (
-        <span className="font-medium text-sm">SALE-{String(item.id).padStart(4, "0")}</span>
+        <span className="font-semibold text-sm">SALE-{String(item.id).padStart(4, "0")}</span>
       ),
     },
     {
-      key: "date",
-      header: "Date",
+      key: "created_at",
+      header: "Date & Time",
       render: (item: ApiSale) => (
-        <span className="text-sm text-neutral-600 dark:text-neutral-400">
-          {formatDate(item.created_at)}
-        </span>
-      ),
-    },
-    {
-      key: "served_by",
-      header: "Served By",
-      render: (item: ApiSale) => (
-        <span className="text-sm">{item.served_by?.name ?? "—"}</span>
+        <span className="text-sm text-neutral-600 dark:text-neutral-400">{formatDate(item.created_at)}</span>
       ),
     },
     {
       key: "payment_type",
       header: "Payment",
       render: (item: ApiSale) => (
-        <span className="text-sm text-neutral-600 dark:text-neutral-400 capitalize">
-          {item.payment_type ? item.payment_type.replace(/_/g, " ") : "—"}
+        <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 capitalize">
+          {item.payment_type ? item.payment_type.replace(/_/g, " ") : "cash"}
+        </span>
+      ),
+    },
+    {
+      key: "items",
+      header: "Items Count",
+      render: (item: ApiSale) => (
+        <span className="text-sm text-neutral-600 dark:text-neutral-400">
+          {(item.items || []).length} line items
         </span>
       ),
       hideOnMobile: true,
     },
     {
-      key: "items",
-      header: "Items",
-      render: (item: ApiSale) => (
-        <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.items?.length ?? 0}</span>
-      ),
-      hideOnMobile: true,
-    },
-    {
       key: "total",
-      header: "Total",
+      header: "Total Revenue",
       render: (item: ApiSale) => (
-        <span className="font-medium text-sm">
-          {Number(item.total).toLocaleString()} ETB
+        <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
+          {(parseFloat(String(item.total)) || 0).toLocaleString()} ETB
         </span>
       ),
     },
@@ -114,20 +113,33 @@ export default function SalesPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <PageHeader title="Sales History" subtitle="View all counter sales transactions" />
+      <PageHeader title="Sales History" subtitle="Audit all historical counter sales and customer transactions" />
 
-      <div className="relative max-w-xs">
-        <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
-        <input
-          type="text"
-          placeholder="Search by cashier name..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent pl-9 pr-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
-        />
+      <div className="flex items-center justify-between">
+        <div className="relative flex-1 sm:max-w-xs">
+          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
+          <input
+            type="text"
+            placeholder="Search cashier name..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent pl-9 pr-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
+          />
+        </div>
       </div>
 
       <DataTable columns={columns} data={filtered} emptyMessage={isLoading ? "Loading sales history..." : "No sales found"} />
+      <Pagination
+        currentPage={meta.currentPage}
+        lastPage={meta.lastPage}
+        total={meta.total}
+        perPage={meta.perPage}
+        onPageChange={(p) => setPage(p)}
+        onPerPageChange={(pp) => {
+          setPerPage(pp);
+          setPage(1);
+        }}
+      />
     </div>
   );
 }

@@ -26,15 +26,17 @@ export interface SingleMedicineResponse {
   message?: string;
 }
 
-export async function getMedicines(params?: { search?: string; category_id?: string | number; branch_id?: string | number; is_prescription_required?: boolean }): Promise<MedicinesListResponse> {
+export async function getMedicines(params?: { search?: string; category_id?: string | number; branch_id?: string | number; is_prescription_required?: boolean; page?: number; per_page?: number }): Promise<MedicinesListResponse | any> {
   const query = new URLSearchParams();
   if (params?.search) query.append("search", params.search);
   if (params?.category_id) query.append("category_id", String(params.category_id));
   if (params?.branch_id) query.append("branch_id", String(params.branch_id));
   if (params?.is_prescription_required !== undefined) query.append("is_prescription_required", String(params.is_prescription_required));
+  if (params?.page) query.append("page", String(params.page));
+  if (params?.per_page) query.append("per_page", String(params.per_page));
 
   const queryString = query.toString();
-  return apiFetch<MedicinesListResponse>(`/medicines${queryString ? `?${queryString}` : ""}`);
+  return apiFetch<MedicinesListResponse | any>(`/medicines${queryString ? `?${queryString}` : ""}`);
 }
 
 export async function getMedicine(id: number | string): Promise<SingleMedicineResponse> {

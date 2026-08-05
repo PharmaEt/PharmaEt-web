@@ -54,15 +54,19 @@ export async function getPurchaseOrders(params?: {
   status?: string;
   supplier_id?: string | number;
   branch_id?: string | number;
-}): Promise<{ data: ApiPurchaseOrder[] }> {
+  page?: number;
+  per_page?: number;
+}): Promise<{ data: ApiPurchaseOrder[] | any }> {
   const query = new URLSearchParams();
   if (params?.search) query.append("search", params.search);
   if (params?.status) query.append("status", params.status);
   if (params?.supplier_id) query.append("supplier_id", String(params.supplier_id));
   if (params?.branch_id) query.append("branch_id", String(params.branch_id));
+  if (params?.page) query.append("page", String(params.page));
+  if (params?.per_page) query.append("per_page", String(params.per_page));
 
   const queryString = query.toString();
-  return apiFetch<{ data: ApiPurchaseOrder[] }>(`/purchase-orders${queryString ? `?${queryString}` : ""}`);
+  return apiFetch<{ data: ApiPurchaseOrder[] | any }>(`/purchase-orders${queryString ? `?${queryString}` : ""}`);
 }
 
 export async function getPurchaseOrder(id: number | string): Promise<{ data: ApiPurchaseOrder }> {

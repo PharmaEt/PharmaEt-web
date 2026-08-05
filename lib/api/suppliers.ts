@@ -19,8 +19,14 @@ export interface SingleSupplierResponse {
   message?: string;
 }
 
-export async function getSuppliers(): Promise<SuppliersListResponse> {
-  return apiFetch<SuppliersListResponse>("/suppliers");
+export async function getSuppliers(params?: { search?: string; page?: number; per_page?: number }): Promise<SuppliersListResponse | any> {
+  const query = new URLSearchParams();
+  if (params?.search) query.append("search", params.search);
+  if (params?.page) query.append("page", String(params.page));
+  if (params?.per_page) query.append("per_page", String(params.per_page));
+
+  const queryString = query.toString();
+  return apiFetch<SuppliersListResponse | any>(`/suppliers${queryString ? `?${queryString}` : ""}`);
 }
 
 export async function getSupplier(id: number | string): Promise<SingleSupplierResponse> {

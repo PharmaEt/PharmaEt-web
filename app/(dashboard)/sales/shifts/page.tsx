@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { useToast } from "@/components/ui/toast";
 import { getShifts, type ApiShift } from "@/lib/api/shifts";
+import { extractListData } from "@/lib/api/client";
 import { formatDate } from "@/lib/utils";
 
 export default function ShiftsPage() {
@@ -23,8 +24,7 @@ export default function ShiftsPage() {
       const res = await getShifts({
         status: statusFilter !== "all" ? statusFilter : undefined,
       });
-      const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
-      setShifts(list);
+      setShifts(extractListData<ApiShift>(res));
     } catch (err: unknown) {
       toast(err instanceof Error ? err.message : "Failed to load cashier shifts", "error");
     } finally {
@@ -123,6 +123,22 @@ export default function ShiftsPage() {
         </span>
       ),
     },
+    {
+      key: "actions",
+      header: "Actions",
+      render: (item: ApiShift) => (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            router.push(`/sales/shifts/${item.id}`);
+          }}
+          className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+        >
+          <Eye className="h-3.5 w-3.5" />
+          View Audit
+        </button>
+      ),
+    },
   ];
 
   return (
@@ -151,7 +167,12 @@ export default function ShiftsPage() {
         </select>
       </div>
 
-      <DataTable columns={columns} data={filtered} emptyMessage={isLoading ? "Loading cashier register shifts..." : "No shifts found"} />
+      <DataTable
+        columns={columns}
+        data={filtered}
+        onRowClick={(item) => router.push(`/sales/shifts/${item.id}`)}
+        emptyMessage={isLoading ? "Loading cashier register shifts..." : "No shifts found"}
+      />
     </div>
   );
 }

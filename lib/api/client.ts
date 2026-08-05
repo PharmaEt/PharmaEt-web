@@ -46,10 +46,51 @@ export async function apiFetch<T>(endpoint: string, options: ApiFetchOptions = {
       }
     }
     const errorData = await response.json().catch(() => ({ message: `HTTP Error ${response.status}` }));
-    throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    let message = errorData.message || `Request failed with status ${response.status}`;
+    if (errorData.errors && typeof errorData.errors === "object") {
+      const firstErrorField = Object.keys(errorData.errors)[0];
+      if (firstErrorField && Array.isArray(errorData.errors[firstErrorField]) && errorData.errors[firstErrorField][0]) {
+        message = errorData.errors[firstErrorField][0];
+      }
+    }
+    throw new Error(message);
   }
 
   return response.json();
+}
+
+export function extractListData<T>(res: any): T[] {
+  if (!res) return [];
+  if (Array.isArray(res)) return res;
+  if (Array.isArray(res.data)) return res.data;
+  if (res.data && typeof res.data === "object" && Array.isArray(res.data.data)) {
+    return res.data.data;
+  }
+  return [];
+}
+
+export interface PaginationMeta {
+  currentPage: number;
+  lastPage: number;
+  perPage: number;
+  total: number;
+}
+
+export function extractPaginationMeta(res: any, fallbackLength: number = 0): PaginationMeta {
+  if (!res) return { currentPage: 1, lastPage: 1, perPage: 15, total: fallbackLength };
+
+  const obj = res && res.data && typeof res.data === "object" && !Array.isArray(res.data) ? res.data : res;
+
+  if (obj && typeof obj === "object") {
+    const currentPage = Number(obj.current_page ?? obj.currentPage ?? 1);
+    const lastPage = Number(obj.last_page ?? obj.lastPage ?? 1);
+    const perPage = Number(obj.per_page ?? obj.perPage ?? 15);
+    const total = Number(obj.total ?? fallbackLength);
+
+    return { currentPage, lastPage, perPage, total };
+  }
+
+  return { currentPage: 1, lastPage: 1, perPage: 15, total: fallbackLength };
 }
 
 export { API_BASE_URL, SERVER_BASE_URL };

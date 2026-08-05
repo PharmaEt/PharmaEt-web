@@ -12,6 +12,8 @@ import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/context/auth-context";
 import { type ApiUser } from "@/lib/mock-data";
 import { getUsers, deleteUser } from "@/lib/api/users";
+import { extractListData, extractPaginationMeta } from "@/lib/api/client";
+import { Pagination } from "@/components/ui/pagination";
 
 export default function UsersPage() {
   const router = useRouter();
@@ -23,11 +25,22 @@ export default function UsersPage() {
   const [users, setUsers] = useState<ApiUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+  const [meta, setMeta] = useState({ currentPage: 1, lastPage: 1, total: 0, perPage: 15 });
+
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      const res = await getUsers();
-      setUsers(res.data || []);
+      const res = await getUsers({
+        search: search || undefined,
+        role: roleFilter !== "all" ? roleFilter : undefined,
+        page,
+        per_page: perPage,
+      });
+      const list = extractListData<ApiUser>(res);
+      setUsers(list);
+      setMeta(extractPaginationMeta(res, list.length));
     } catch (err: unknown) {
       toast(err instanceof Error ? err.message : "Failed to load staff directory", "error");
     } finally {
@@ -37,49 +50,41 @@ export default function UsersPage() {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [search, roleFilter, page, perPage]);
 
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
       const res = await deleteUser(deleteId);
       toast(res.message || "User deleted successfully", "success");
-      setUsers((prev) => prev.filter((u) => u.id !== deleteId));
+      setDeleteId(null);
+      fetchUsers();
     } catch (err: unknown) {
       toast(err instanceof Error ? err.message : "Failed to delete user", "error");
-    } finally {
-      setDeleteId(null);
     }
   };
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
+  const filteredUsers = users.filter(
+    (user) =>
       user.name.toLowerCase().includes(search.toLowerCase()) ||
-      user.email.toLowerCase().includes(search.toLowerCase());
-    const matchesRole = roleFilter === "all" || user.role === roleFilter;
-    return matchesSearch && matchesRole;
-  });
+      user.email.toLowerCase().includes(search.toLowerCase())
+  );
 
   const columns = [
     {
       key: "id",
       header: "#",
       render: (_: ApiUser, index: number) => (
-        <span className="font-medium text-sm text-neutral-500">#{index + 1}</span>
+        <span className="font-medium text-sm text-neutral-500">#{(page - 1) * perPage + index + 1}</span>
       ),
     },
     {
-      key: "user",
-      header: "User",
+      key: "name",
+      header: "Name",
       render: (item: ApiUser) => (
-        <div className="flex items-center gap-3">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-[11px] font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
-            {item.name.charAt(0)}
-          </div>
-          <div className="min-w-0">
-            <p className="font-medium truncate">{item.name}</p>
-            <p className="text-xs text-neutral-500 truncate">{item.email}</p>
-          </div>
+        <div>
+          <span className="text-sm font-medium">{item.name}</span>
+          <p className="text-xs text-neutral-500">{item.email}</p>
         </div>
       ),
     },
@@ -91,36 +96,24 @@ export default function UsersPage() {
     {
       key: "branch",
       header: "Branch",
-      render: (item: ApiUser) => {
-        return <span className="text-neutral-500">{item.branch?.name ?? "Global / Unassigned"}</span>;
-      },
+      render: (item: ApiUser) => (
+        <span className="text-sm text-neutral-600 dark:text-neutral-400">
+          {item.branch?.name ?? "Global HQ"}
+        </span>
+      ),
       hideOnMobile: true,
     },
     {
       key: "phone",
       header: "Phone",
       render: (item: ApiUser) => (
-        <span className="text-neutral-500">{item.phone ?? "—"}</span>
-      ),
-      hideOnMobile: true,
-    },
-    {
-      key: "status",
-      header: "Status",
-      render: (item: ApiUser) => <StatusBadge status={item.status} />,
-    },
-    {
-      key: "created_at",
-      header: "Joined",
-      render: (item: ApiUser) => (
-        <span className="text-neutral-500">{item.created_at ? new Date(item.created_at).toLocaleDateString() : "—"}</span>
+        <span className="text-sm font-mono text-neutral-600 dark:text-neutral-400">{item.phone || "—"}</span>
       ),
       hideOnMobile: true,
     },
     {
       key: "actions",
-      header: "",
-      className: "w-20",
+      header: "Actions",
       render: (item: ApiUser) => (
         <div className="flex items-center gap-1">
           {isOwner && (
@@ -128,14 +121,14 @@ export default function UsersPage() {
               <button
                 onClick={() => router.push(`/users/${item.id}`)}
                 aria-label="Edit"
-                className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
+                className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
               >
                 <Pencil className="h-3.5 w-3.5" />
               </button>
               <button
                 onClick={() => setDeleteId(item.id)}
                 aria-label="Delete"
-                className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
+                className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50"
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
@@ -150,7 +143,7 @@ export default function UsersPage() {
     <div className="space-y-4 sm:space-y-6">
       <PageHeader
         title="Users"
-        subtitle="Manage system users"
+        subtitle="Manage system staff and user accounts"
         action={isOwner ? { label: "Add User", icon: Plus, href: "/users/new" } : undefined}
       />
 
@@ -161,13 +154,19 @@ export default function UsersPage() {
             type="text"
             placeholder="Search users..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent pl-9 pr-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
           />
         </div>
         <select
           value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
+          onChange={(e) => {
+            setRoleFilter(e.target.value);
+            setPage(1);
+          }}
           className="flex h-9 w-full sm:w-auto rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600 dark:bg-neutral-900"
         >
           <option value="all">All Roles</option>
@@ -180,6 +179,17 @@ export default function UsersPage() {
       </div>
 
       <DataTable columns={columns} data={filteredUsers} emptyMessage={isLoading ? "Loading staff directory..." : "No users found"} />
+      <Pagination
+        currentPage={meta.currentPage}
+        lastPage={meta.lastPage}
+        total={meta.total}
+        perPage={meta.perPage}
+        onPageChange={(p) => setPage(p)}
+        onPerPageChange={(pp) => {
+          setPerPage(pp);
+          setPage(1);
+        }}
+      />
 
       <ConfirmDialog
         open={deleteId !== null}

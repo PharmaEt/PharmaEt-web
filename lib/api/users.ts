@@ -22,8 +22,16 @@ export interface SingleUserResponse {
   message?: string;
 }
 
-export async function getUsers(): Promise<UsersListResponse> {
-  return apiFetch<UsersListResponse>("/users");
+export async function getUsers(params?: { search?: string; role?: string; branch_id?: string | number; page?: number; per_page?: number }): Promise<UsersListResponse | any> {
+  const query = new URLSearchParams();
+  if (params?.search) query.append("search", params.search);
+  if (params?.role) query.append("role", params.role);
+  if (params?.branch_id) query.append("branch_id", String(params.branch_id));
+  if (params?.page) query.append("page", String(params.page));
+  if (params?.per_page) query.append("per_page", String(params.per_page));
+
+  const queryString = query.toString();
+  return apiFetch<UsersListResponse | any>(`/users${queryString ? `?${queryString}` : ""}`);
 }
 
 export async function getUser(id: number | string): Promise<SingleUserResponse> {

@@ -18,8 +18,14 @@ export interface SingleBranchResponse {
   message?: string;
 }
 
-export async function getBranches(): Promise<BranchesListResponse> {
-  return apiFetch<BranchesListResponse>("/branches");
+export async function getBranches(params?: { search?: string; page?: number; per_page?: number }): Promise<BranchesListResponse | any> {
+  const query = new URLSearchParams();
+  if (params?.search) query.append("search", params.search);
+  if (params?.page) query.append("page", String(params.page));
+  if (params?.per_page) query.append("per_page", String(params.per_page));
+
+  const queryString = query.toString();
+  return apiFetch<BranchesListResponse | any>(`/branches${queryString ? `?${queryString}` : ""}`);
 }
 
 export async function getBranch(id: number | string): Promise<SingleBranchResponse> {

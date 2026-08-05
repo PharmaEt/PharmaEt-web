@@ -28,15 +28,17 @@ export interface SingleCosmeticResponse {
   message?: string;
 }
 
-export async function getCosmetics(params?: { search?: string; category_id?: string | number; branch_id?: string | number; product_type?: string }): Promise<CosmeticsListResponse> {
+export async function getCosmetics(params?: { search?: string; category_id?: string | number; branch_id?: string | number; product_type?: string; page?: number; per_page?: number }): Promise<CosmeticsListResponse | any> {
   const query = new URLSearchParams();
   if (params?.search) query.append("search", params.search);
   if (params?.category_id) query.append("category_id", String(params.category_id));
   if (params?.branch_id) query.append("branch_id", String(params.branch_id));
   if (params?.product_type) query.append("product_type", params.product_type);
+  if (params?.page) query.append("page", String(params.page));
+  if (params?.per_page) query.append("per_page", String(params.per_page));
 
   const queryString = query.toString();
-  return apiFetch<CosmeticsListResponse>(`/cosmetics${queryString ? `?${queryString}` : ""}`);
+  return apiFetch<CosmeticsListResponse | any>(`/cosmetics${queryString ? `?${queryString}` : ""}`);
 }
 
 export async function getCosmetic(id: number | string): Promise<SingleCosmeticResponse> {

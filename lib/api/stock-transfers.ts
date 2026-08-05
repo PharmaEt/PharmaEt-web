@@ -57,12 +57,14 @@ export async function getStockTransfers(params?: {
   from_branch_id?: string | number;
   to_branch_id?: string | number;
   page?: number;
+  per_page?: number;
 }): Promise<{ data: ApiStockTransfer[] | { data: ApiStockTransfer[]; total?: number } }> {
   const query = new URLSearchParams();
   if (params?.status) query.append("status", params.status);
   if (params?.from_branch_id) query.append("from_branch_id", String(params.from_branch_id));
   if (params?.to_branch_id) query.append("to_branch_id", String(params.to_branch_id));
   if (params?.page) query.append("page", String(params.page));
+  if (params?.per_page) query.append("per_page", String(params.per_page));
 
   const queryString = query.toString();
   return apiFetch<{ data: ApiStockTransfer[] | { data: ApiStockTransfer[]; total?: number } }>(

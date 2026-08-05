@@ -8,6 +8,9 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { useToast } from "@/components/ui/toast";
 import { getStockMovements } from "@/lib/api/stock";
 
+import { extractListData, extractPaginationMeta } from "@/lib/api/client";
+import { Pagination } from "@/components/ui/pagination";
+
 const typeConfig: Record<string, { label: string; className: string }> = {
   purchase: { label: "Purchase", className: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400" },
   sale: { label: "Sale", className: "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400" },
@@ -24,15 +27,22 @@ export default function StockMovementsPage() {
   const [movements, setMovements] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+  const [meta, setMeta] = useState({ currentPage: 1, lastPage: 1, total: 0, perPage: 15 });
+
   const fetchMovements = async () => {
     setIsLoading(true);
     try {
       const res = await getStockMovements({
         search,
         type: typeFilter !== "all" ? typeFilter : undefined,
+        page,
+        per_page: perPage,
       });
-      const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
+      const list = extractListData<any>(res);
       setMovements(list);
+      setMeta(extractPaginationMeta(res, list.length));
     } catch (err: unknown) {
       toast(err instanceof Error ? err.message : "Failed to load stock movements audit log", "error");
     } finally {
@@ -42,14 +52,14 @@ export default function StockMovementsPage() {
 
   useEffect(() => {
     fetchMovements();
-  }, [search, typeFilter]);
+  }, [search, typeFilter, page, perPage]);
 
   const columns = [
     {
       key: "id",
       header: "#",
       render: (_: any, index: number) => (
-        <span className="font-medium text-sm text-neutral-500">#{index + 1}</span>
+        <span className="font-medium text-sm text-neutral-500">#{(page - 1) * perPage + index + 1}</span>
       ),
     },
     {
@@ -80,12 +90,31 @@ export default function StockMovementsPage() {
     },
     {
       key: "quantity",
-      header: "Qty Change",
-      render: (item: any) => (
-        <span className={`font-medium text-sm ${item.quantity < 0 || item.type === "sale" || item.type === "transfer_out" ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"}`}>
-          {item.quantity > 0 ? `+${item.quantity}` : item.quantity}
-        </span>
-      ),
+      header: "Inventory Change",
+      render: (item: any) => {
+        const qty = item.quantity || 0;
+        const packSize = item.product?.pack_size || (item.product as any)?.productable?.pack_size || 1;
+        const isNegative = qty < 0 || item.type === "sale" || item.type === "transfer_out";
+
+        let formatted = `${qty > 0 ? `+${qty}` : qty} Units`;
+        if (packSize > 1) {
+          const absQty = Math.abs(qty);
+          const packs = Math.floor(absQty / packSize);
+          const remUnits = absQty % packSize;
+
+          if (packs > 0) {
+            const packStr = `${isNegative ? "-" : "+"}${packs} ${packs === 1 ? "Pack" : "Packs"}`;
+            const unitStr = remUnits > 0 ? `, ${remUnits} ${remUnits === 1 ? "Unit" : "Units"}` : "";
+            formatted = `${packStr}${unitStr} (${qty > 0 ? `+${qty}` : qty} Base Units)`;
+          }
+        }
+
+        return (
+          <span className={`font-medium text-sm ${isNegative ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"}`}>
+            {formatted}
+          </span>
+        );
+      },
     },
     {
       key: "user",
@@ -118,13 +147,19 @@ export default function StockMovementsPage() {
             type="text"
             placeholder="Search movements..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent pl-9 pr-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
           />
         </div>
         <select
           value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
+          onChange={(e) => {
+            setTypeFilter(e.target.value);
+            setPage(1);
+          }}
           className="flex h-9 w-full sm:w-auto rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600 dark:bg-neutral-900"
         >
           <option value="all">All Movement Types</option>
@@ -143,7 +178,20 @@ export default function StockMovementsPage() {
           description="Try clearing your search query or selecting a different movement type."
         />
       ) : (
-        <DataTable columns={columns} data={movements} emptyMessage={isLoading ? "Loading stock movements audit log..." : "No movements found"} />
+        <>
+          <DataTable columns={columns} data={movements} emptyMessage={isLoading ? "Loading stock movements audit log..." : "No movements found"} />
+          <Pagination
+            currentPage={meta.currentPage}
+            lastPage={meta.lastPage}
+            total={meta.total}
+            perPage={meta.perPage}
+            onPageChange={(p) => setPage(p)}
+            onPerPageChange={(pp) => {
+              setPerPage(pp);
+              setPage(1);
+            }}
+          />
+        </>
       )}
     </div>
   );

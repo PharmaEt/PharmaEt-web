@@ -11,6 +11,8 @@ import { useAuth } from "@/context/auth-context";
 import { type ApiProduct, type ApiCategory } from "@/lib/mock-data";
 import { getCosmetics, deleteCosmetic } from "@/lib/api/cosmetics";
 import { getCategories } from "@/lib/api/categories";
+import { extractListData, extractPaginationMeta } from "@/lib/api/client";
+import { Pagination } from "@/components/ui/pagination";
 
 export default function CosmeticsPage() {
   const router = useRouter();
@@ -23,16 +25,24 @@ export default function CosmeticsPage() {
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+  const [meta, setMeta] = useState({ currentPage: 1, lastPage: 1, total: 0, perPage: 15 });
+
   const fetchCosmetics = async () => {
     setIsLoading(true);
     try {
       const [cosRes, catRes] = await Promise.all([
-        getCosmetics({ search, category_id: categoryFilter !== "all" ? categoryFilter : undefined }),
+        getCosmetics({ search, category_id: categoryFilter !== "all" ? categoryFilter : undefined, page, per_page: perPage }),
         getCategories({ type: "cosmetic" }).catch(() => ({ data: [] })),
       ]);
-      setCosmetics(cosRes.data || []);
-      if (catRes.data) {
-        setCategories(catRes.data.filter((c) => c.type === "cosmetic"));
+      const list = extractListData<ApiProduct>(cosRes);
+      setCosmetics(list);
+      setMeta(extractPaginationMeta(cosRes, list.length));
+
+      const catList = extractListData<ApiCategory>(catRes);
+      if (catList.length > 0) {
+        setCategories(catList.filter((c) => c.type === "cosmetic"));
       }
     } catch (err: unknown) {
       toast(err instanceof Error ? err.message : "Failed to load cosmetics catalog", "error");
@@ -43,29 +53,23 @@ export default function CosmeticsPage() {
 
   useEffect(() => {
     fetchCosmetics();
-  }, [categoryFilter]);
+  }, [search, categoryFilter, page, perPage]);
 
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
-      const res = await deleteCosmetic(deleteId);
-      toast(res.message || "Cosmetic deleted successfully", "success");
-      setCosmetics((prev) => prev.filter((c) => c.id !== deleteId));
+      await deleteCosmetic(deleteId);
+      toast("Cosmetic deleted successfully", "success");
+      setDeleteId(null);
+      fetchCosmetics();
     } catch (err: unknown) {
       toast(err instanceof Error ? err.message : "Failed to delete cosmetic", "error");
-    } finally {
-      setDeleteId(null);
     }
   };
 
   const filtered = cosmetics.filter((c) => {
-    const cosmeticDetails = c.productable as { product_type?: string; sku?: string } | undefined;
-    const matchesSearch =
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      (c.sku ?? "").toLowerCase().includes(search.toLowerCase()) ||
-      (cosmeticDetails?.product_type ?? "").toLowerCase().includes(search.toLowerCase());
-    const matchesCategory = categoryFilter === "all" || String(c.category_id) === categoryFilter;
-    return matchesSearch && matchesCategory;
+    const brandName = c.name ?? "";
+    return brandName.toLowerCase().includes(search.toLowerCase());
   });
 
   const columns = [
@@ -73,79 +77,53 @@ export default function CosmeticsPage() {
       key: "id",
       header: "#",
       render: (_: ApiProduct, index: number) => (
-        <span className="font-medium text-sm text-neutral-500">#{index + 1}</span>
+        <span className="font-medium text-sm text-neutral-500">#{(page - 1) * perPage + index + 1}</span>
       ),
     },
     {
       key: "name",
-      header: "Cosmetic",
+      header: "Cosmetic Name",
       render: (item: ApiProduct) => (
-        <span className="text-sm font-medium">{item.name}</span>
+        <span className="font-medium text-sm">{item.name}</span>
       ),
-    },
-    {
-      key: "product_type",
-      header: "Type",
-      render: (item: ApiProduct) => {
-        const cosmeticDetails = item.productable as { product_type?: string } | undefined;
-        return (
-          <span className="inline-flex items-center rounded bg-neutral-100 px-1.5 py-0.5 text-xs font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
-            {cosmeticDetails?.product_type || "Cosmetic"}
-          </span>
-        );
-      },
-      hideOnMobile: true,
-    },
-    {
-      key: "sku",
-      header: "SKU",
-      render: (item: ApiProduct) => (
-        <span className="text-sm text-neutral-600 dark:text-neutral-400 font-mono">{item.sku || "—"}</span>
-      ),
-      hideOnMobile: true,
     },
     {
       key: "category",
       header: "Category",
       render: (item: ApiProduct) => (
-        <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.category?.name ?? "—"}</span>
+        <span className="text-sm text-neutral-600 dark:text-neutral-400">{(item as any).category?.name ?? "—"}</span>
       ),
       hideOnMobile: true,
     },
     {
-      key: "pack_size",
-      header: "Pack Size",
-      render: (item: ApiProduct) => (
-        <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.pack_size ?? 1}</span>
-      ),
-      hideOnMobile: true,
-    },
-    {
-      key: "min_stock_alert",
-      header: "Min Alert",
-      render: (item: ApiProduct) => (
-        <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.min_stock_alert ?? 10}</span>
-      ),
+      key: "type",
+      header: "Type / Size",
+      render: (item: ApiProduct) => {
+        const details = (item as any).details || (item as any).productable;
+        const pType = details?.product_type ?? "—";
+        const size = details?.size ?? "";
+        const unit = details?.unit ?? "";
+        return <span className="text-sm text-neutral-600 dark:text-neutral-400">{pType} {size} {unit}</span>;
+      },
       hideOnMobile: true,
     },
     {
       key: "actions",
-      header: "",
-      className: "w-24",
+      header: "Actions",
       render: (item: ApiProduct) => (
         <div className="flex items-center gap-1">
           <button
             onClick={() => router.push(`/cosmetics/${item.id}`)}
             aria-label="View"
-            className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
+            className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
           >
             <Eye className="h-3.5 w-3.5" />
           </button>
           {canManageCatalog && (
             <button
-              onClick={() => router.push(`/cosmetics/${item.id}`)}
+              onClick={() => router.push(`/cosmetics/${item.id}/edit`)}
               aria-label="Edit"
-              className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
+              className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
             >
               <Pencil className="h-3.5 w-3.5" />
             </button>
@@ -154,7 +132,7 @@ export default function CosmeticsPage() {
             <button
               onClick={() => setDeleteId(item.id)}
               aria-label="Delete"
-              className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
+              className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
@@ -167,8 +145,8 @@ export default function CosmeticsPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       <PageHeader
-        title="Cosmetics"
-        subtitle="Manage cosmetic and beauty products"
+        title="Cosmetics Catalog"
+        subtitle="Manage skincare, personal care, and beauty products"
         action={canManageCatalog ? { label: "Add Cosmetic", icon: Plus, href: "/cosmetics/new" } : undefined}
       />
 
@@ -179,13 +157,19 @@ export default function CosmeticsPage() {
             type="text"
             placeholder="Search cosmetics..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent pl-9 pr-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
           />
         </div>
         <select
           value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
+          onChange={(e) => {
+            setCategoryFilter(e.target.value);
+            setPage(1);
+          }}
           className="flex h-9 w-full sm:w-auto rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600 dark:bg-neutral-900"
         >
           <option value="all">All Cosmetic Categories</option>
@@ -196,6 +180,17 @@ export default function CosmeticsPage() {
       </div>
 
       <DataTable columns={columns} data={filtered} emptyMessage={isLoading ? "Loading cosmetics catalog..." : "No cosmetics found"} />
+      <Pagination
+        currentPage={meta.currentPage}
+        lastPage={meta.lastPage}
+        total={meta.total}
+        perPage={meta.perPage}
+        onPageChange={(p) => setPage(p)}
+        onPerPageChange={(pp) => {
+          setPerPage(pp);
+          setPage(1);
+        }}
+      />
 
       <ConfirmDialog
         open={deleteId !== null}

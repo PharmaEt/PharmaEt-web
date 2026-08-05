@@ -19,11 +19,13 @@ export interface SingleCategoryResponse {
   message?: string;
 }
 
-export async function getCategories(params?: { type?: string }): Promise<CategoriesListResponse> {
+export async function getCategories(params?: { type?: string; page?: number; per_page?: number }): Promise<CategoriesListResponse | any> {
   const query = new URLSearchParams();
   if (params?.type) query.append("type", params.type);
+  if (params?.page) query.append("page", String(params.page));
+  if (params?.per_page) query.append("per_page", String(params.per_page));
   const queryString = query.toString();
-  return apiFetch<CategoriesListResponse>(`/categories${queryString ? `?${queryString}` : ""}`);
+  return apiFetch<CategoriesListResponse | any>(`/categories${queryString ? `?${queryString}` : ""}`);
 }
 
 export async function getCategory(id: number | string): Promise<SingleCategoryResponse> {

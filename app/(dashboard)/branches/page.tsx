@@ -11,6 +11,8 @@ import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/context/auth-context";
 import { type ApiBranch } from "@/lib/mock-data";
 import { getBranches, deleteBranch } from "@/lib/api/branches";
+import { extractListData, extractPaginationMeta } from "@/lib/api/client";
+import { Pagination } from "@/components/ui/pagination";
 
 export default function BranchesPage() {
   const router = useRouter();
@@ -21,11 +23,17 @@ export default function BranchesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+  const [meta, setMeta] = useState({ currentPage: 1, lastPage: 1, total: 0, perPage: 15 });
+
   const fetchBranches = async () => {
     setIsLoading(true);
     try {
-      const res = await getBranches();
-      setBranches(res.data || []);
+      const res = await getBranches({ page, per_page: perPage });
+      const list = extractListData<ApiBranch>(res);
+      setBranches(list);
+      setMeta(extractPaginationMeta(res, list.length));
     } catch (err: unknown) {
       toast(err instanceof Error ? err.message : "Failed to load branches", "error");
     } finally {
@@ -35,7 +43,7 @@ export default function BranchesPage() {
 
   useEffect(() => {
     fetchBranches();
-  }, []);
+  }, [page, perPage]);
 
   const totalStaff = branches.reduce((sum, b) => sum + (b.users?.length ?? 0), 0);
   const totalManagers = branches.reduce(
@@ -49,12 +57,12 @@ export default function BranchesPage() {
     try {
       const res = await deleteBranch(deleteId);
       toast(res.message || "Branch deleted successfully", "success");
-      setBranches((prev) => prev.filter((b) => b.id !== deleteId));
+      setDeleteId(null);
+      fetchBranches();
     } catch (err: unknown) {
       toast(err instanceof Error ? err.message : "Failed to delete branch", "error");
     } finally {
       setIsDeleting(false);
-      setDeleteId(null);
     }
   };
 
@@ -63,99 +71,65 @@ export default function BranchesPage() {
       key: "id",
       header: "#",
       render: (_: ApiBranch, index: number) => (
-        <span className="font-medium text-sm text-neutral-500">#{index + 1}</span>
+        <span className="font-medium text-sm text-neutral-500">#{(page - 1) * perPage + index + 1}</span>
       ),
     },
     {
       key: "name",
-      header: "Branch",
+      header: "Branch Name",
       render: (item: ApiBranch) => (
-        <div>
-          <p className="font-medium">{item.name}</p>
-          <p className="text-xs text-neutral-500">{item.location ?? "—"}</p>
-        </div>
+        <span className="font-medium text-sm text-neutral-900 dark:text-neutral-100">{item.name}</span>
       ),
     },
     {
-      key: "manager",
-      header: "Manager",
-      render: (item: ApiBranch) => {
-        const manager = item.users?.find((u) => u.role === "manager");
-        return (
-          <div>
-            <p className="text-sm">{manager?.name ?? "—"}</p>
-            {manager?.email && (
-              <p className="text-xs text-neutral-500">{manager.email}</p>
-            )}
-          </div>
-        );
-      },
+      key: "location",
+      header: "Location",
+      render: (item: ApiBranch) => (
+        <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.location ?? "—"}</span>
+      ),
+      hideOnMobile: true,
     },
     {
       key: "phone",
       header: "Phone",
       render: (item: ApiBranch) => (
-        <span className="text-neutral-500 text-sm">{item.phone ?? "—"}</span>
+        <span className="text-sm font-mono text-neutral-600 dark:text-neutral-400">{item.phone ?? "—"}</span>
       ),
       hideOnMobile: true,
     },
     {
-      key: "staff",
-      header: "Staff",
-      render: (item: ApiBranch) => {
-        const users = item.users ?? [];
-        const pharmacists = users.filter((u) => u.role === "pharmacist").length;
-        const cashiers = users.filter((u) => u.role === "cashier").length;
-        const others = users.filter(
-          (u) => u.role !== "pharmacist" && u.role !== "cashier" && u.role !== "manager"
-        ).length;
-        return (
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center rounded bg-neutral-100 px-1.5 py-0.5 text-xs font-medium text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
-              {users.length} total
-            </span>
-            <span className="hidden text-xs text-neutral-500 sm:inline">
-              {pharmacists}P / {cashiers}C{others > 0 ? ` / ${others}O` : ""}
-            </span>
-          </div>
-        );
-      },
-      hideOnMobile: true,
-    },
-    {
-      key: "founded_year",
-      header: "Year",
+      key: "staff_count",
+      header: "Staff Members",
       render: (item: ApiBranch) => (
-        <span className="text-neutral-500 text-sm">{item.founded_year ?? "—"}</span>
+        <span className="text-sm font-medium text-neutral-600 dark:text-neutral-400">{item.users?.length ?? 0} staff</span>
       ),
       hideOnMobile: true,
     },
     {
       key: "actions",
-      header: "",
-      className: "w-24",
+      header: "Actions",
       render: (item: ApiBranch) => (
         <div className="flex items-center gap-1">
           <button
             onClick={() => router.push(`/branches/${item.id}`)}
             aria-label="View"
-            className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
+            className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
           >
             <Eye className="h-3.5 w-3.5" />
           </button>
           {isOwner && (
             <>
               <button
-                onClick={() => router.push(`/branches/${item.id}`)}
+                onClick={() => router.push(`/branches/${item.id}/edit`)}
                 aria-label="Edit"
-                className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
+                className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
               >
                 <Pencil className="h-3.5 w-3.5" />
               </button>
               <button
                 onClick={() => setDeleteId(item.id)}
                 aria-label="Delete"
-                className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
+                className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50"
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
@@ -170,18 +144,29 @@ export default function BranchesPage() {
     <div className="space-y-4 sm:space-y-6">
       <PageHeader
         title="Branches"
-        subtitle="Manage pharmacy branches"
+        subtitle="Manage pharmacy branch operations"
         action={isOwner ? { label: "Add Branch", icon: Plus, href: "/branches/new" } : undefined}
       />
 
       <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-4">
-        <StatsCard title="Branches" value={isLoading ? "..." : branches.length} />
+        <StatsCard title="Branches" value={isLoading ? "..." : meta.total || branches.length} />
         <StatsCard title="Staff" value={isLoading ? "..." : totalStaff} />
         <StatsCard title="Managers" value={isLoading ? "..." : totalManagers} />
-        <StatsCard title="Active" value={isLoading ? "..." : branches.length} />
+        <StatsCard title="Active" value={isLoading ? "..." : meta.total || branches.length} />
       </div>
 
       <DataTable columns={columns} data={branches} emptyMessage={isLoading ? "Loading branches..." : "No branches found"} />
+      <Pagination
+        currentPage={meta.currentPage}
+        lastPage={meta.lastPage}
+        total={meta.total}
+        perPage={meta.perPage}
+        onPageChange={(p) => setPage(p)}
+        onPerPageChange={(pp) => {
+          setPerPage(pp);
+          setPage(1);
+        }}
+      />
 
       <ConfirmDialog
         open={deleteId !== null}

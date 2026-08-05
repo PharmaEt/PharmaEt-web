@@ -8,6 +8,8 @@ import { DataTable } from "@/components/ui/data-table";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/toast";
 import { getPurchaseOrders, cancelPurchaseOrder, type ApiPurchaseOrder } from "@/lib/api/purchase-orders";
+import { extractListData, extractPaginationMeta } from "@/lib/api/client";
+import { Pagination } from "@/components/ui/pagination";
 import { formatDate } from "@/lib/utils";
 
 export default function PurchaseOrdersPage() {
@@ -19,15 +21,22 @@ export default function PurchaseOrdersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [cancelId, setCancelId] = useState<number | null>(null);
 
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+  const [meta, setMeta] = useState({ currentPage: 1, lastPage: 1, total: 0, perPage: 15 });
+
   const fetchOrders = async () => {
     setIsLoading(true);
     try {
       const res = await getPurchaseOrders({
         search: search || undefined,
         status: statusFilter !== "all" ? statusFilter : undefined,
+        page,
+        per_page: perPage,
       });
-      const list = Array.isArray(res.data) ? res.data : (res.data as any)?.data || [];
+      const list = extractListData<ApiPurchaseOrder>(res);
       setPos(list);
+      setMeta(extractPaginationMeta(res, list.length));
     } catch (err: unknown) {
       toast(err instanceof Error ? err.message : "Failed to load purchase orders", "error");
     } finally {
@@ -37,7 +46,7 @@ export default function PurchaseOrdersPage() {
 
   useEffect(() => {
     fetchOrders();
-  }, [search, statusFilter]);
+  }, [search, statusFilter, page, perPage]);
 
   const handleCancel = async () => {
     if (!cancelId) return;
@@ -109,57 +118,51 @@ export default function PurchaseOrdersPage() {
       key: "status",
       header: "Status",
       render: (item: ApiPurchaseOrder) => {
-        const config = statusConfig[item.status] || statusConfig.draft;
+        const isDraft = item.status === "draft";
+        const isOrdered = item.status === "ordered";
+        const isPartial = item.status === "partially_received";
+        const isReceived = item.status === "received";
+
         return (
-          <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${config.className}`}>
-            {config.label}
+          <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${
+            isReceived ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400" :
+            isPartial ? "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400" :
+            isOrdered ? "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400" :
+            isDraft ? "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400" :
+            "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400"
+          }`}>
+            {item.status.replace(/_/g, " ").toUpperCase()}
           </span>
         );
       },
     },
     {
       key: "actions",
-      header: "",
-      className: "w-24",
+      header: "Actions",
       render: (item: ApiPurchaseOrder) => (
         <div className="flex items-center gap-1">
           <button
             onClick={() => router.push(`/purchase-orders/${item.id}`)}
             aria-label="View"
-            className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
-            title="View Details"
+            className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800"
           >
             <Eye className="h-3.5 w-3.5" />
           </button>
-
-          {item.status === "draft" && (
-            <button
-              onClick={() => router.push(`/purchase-orders/${item.id}`)}
-              aria-label="Send Order"
-              className="flex h-8 w-8 items-center justify-center rounded-md text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950"
-              title="Send Order to Supplier"
-            >
-              <Send className="h-3.5 w-3.5" />
-            </button>
-          )}
-
           {(item.status === "ordered" || item.status === "partially_received") && (
             <button
               onClick={() => router.push(`/purchase-orders/${item.id}/receive`)}
-              aria-label="Receive"
-              className="flex h-8 w-8 items-center justify-center rounded-md text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950"
-              title="Receive Delivery"
+              aria-label="Receive Goods"
+              title="Receive Goods (GRN)"
+              className="flex h-8 w-8 items-center justify-center rounded-md text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/50"
             >
               <PackageCheck className="h-3.5 w-3.5" />
             </button>
           )}
-
           {item.status === "draft" && (
             <button
               onClick={() => setCancelId(item.id)}
               aria-label="Cancel"
-              className="flex h-8 w-8 items-center justify-center rounded-md text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
-              title="Cancel Order"
+              className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50"
             >
               <XCircle className="h-3.5 w-3.5" />
             </button>
@@ -173,8 +176,8 @@ export default function PurchaseOrdersPage() {
     <div className="space-y-4 sm:space-y-6">
       <PageHeader
         title="Purchase Orders"
-        subtitle="Manage supplier purchase orders and stock intakes"
-        action={{ label: "New Order", icon: Plus, href: "/purchase-orders/new" }}
+        subtitle="Manage supplier procurement and goods receiving notes (GRN)"
+        action={{ label: "New Purchase Order", icon: Plus, href: "/purchase-orders/new" }}
       />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -184,13 +187,19 @@ export default function PurchaseOrdersPage() {
             type="text"
             placeholder="Search orders..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent pl-9 pr-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
           />
         </div>
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setPage(1);
+          }}
           className="flex h-9 w-full sm:w-auto rounded-md border border-neutral-200 bg-transparent px-3 text-sm focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
         >
           <option value="all">All Status</option>
@@ -202,7 +211,18 @@ export default function PurchaseOrdersPage() {
         </select>
       </div>
 
-      <DataTable columns={columns} data={pos} emptyMessage="No purchase orders found" />
+      <DataTable columns={columns} data={pos} emptyMessage={isLoading ? "Loading purchase orders..." : "No purchase orders found"} />
+      <Pagination
+        currentPage={meta.currentPage}
+        lastPage={meta.lastPage}
+        total={meta.total}
+        perPage={meta.perPage}
+        onPageChange={(p) => setPage(p)}
+        onPerPageChange={(pp) => {
+          setPerPage(pp);
+          setPage(1);
+        }}
+      />
 
       <ConfirmDialog
         open={cancelId !== null}

@@ -49,16 +49,20 @@ export async function getStockBatches(params?: {
   branch_id?: string | number;
   supplier_id?: string | number;
   batch_number?: string;
-}): Promise<{ data: ApiStock[] }> {
+  page?: number;
+  per_page?: number;
+}): Promise<{ data: ApiStock[] | { data: ApiStock[]; total?: number } }> {
   const query = new URLSearchParams();
   if (params?.search) query.append("search", params.search);
   if (params?.product_id) query.append("product_id", String(params.product_id));
   if (params?.branch_id) query.append("branch_id", String(params.branch_id));
   if (params?.supplier_id) query.append("supplier_id", String(params.supplier_id));
   if (params?.batch_number) query.append("batch_number", params.batch_number);
+  if (params?.page) query.append("page", String(params.page));
+  if (params?.per_page) query.append("per_page", String(params.per_page));
 
   const queryString = query.toString();
-  return apiFetch<{ data: ApiStock[] }>(`/stock${queryString ? `?${queryString}` : ""}`);
+  return apiFetch<{ data: ApiStock[] | { data: ApiStock[]; total?: number } }>(`/stock${queryString ? `?${queryString}` : ""}`);
 }
 
 export async function getStockBatch(id: number | string): Promise<{ data: ApiStock }> {
@@ -95,12 +99,16 @@ export async function getStockMovements(params?: {
   type?: string;
   product_id?: string | number;
   stock_id?: string | number;
+  page?: number;
+  per_page?: number;
 }): Promise<StockMovementsResponse> {
   const query = new URLSearchParams();
   if (params?.search) query.append("search", params.search);
   if (params?.type) query.append("type", params.type);
   if (params?.product_id) query.append("product_id", String(params.product_id));
   if (params?.stock_id) query.append("stock_id", String(params.stock_id));
+  if (params?.page) query.append("page", String(params.page));
+  if (params?.per_page) query.append("per_page", String(params.per_page));
 
   const queryString = query.toString();
   return apiFetch<StockMovementsResponse>(`/stock-movements${queryString ? `?${queryString}` : ""}`);
