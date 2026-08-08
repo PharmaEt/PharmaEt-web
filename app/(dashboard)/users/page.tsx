@@ -142,9 +142,9 @@ export default function UsersPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       <PageHeader
-        title="Users"
+        title="Staff"
         subtitle="Manage system staff and user accounts"
-        action={isOwner ? { label: "Add User", icon: Plus, href: "/users/new" } : undefined}
+        action={isOwner ? { label: "Add Staff", icon: Plus, href: "/users/new" } : undefined}
       />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -152,7 +152,7 @@ export default function UsersPage() {
           <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
           <input
             type="text"
-            placeholder="Search users..."
+            placeholder="Search staff..."
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -178,7 +178,7 @@ export default function UsersPage() {
         </select>
       </div>
 
-      <DataTable columns={columns} data={filteredUsers} emptyMessage={isLoading ? "Loading staff directory..." : "No users found"} />
+      <DataTable columns={columns} data={filteredUsers} emptyMessage={isLoading ? "Loading staff directory..." : "No staff found"} />
       <Pagination
         currentPage={meta.currentPage}
         lastPage={meta.lastPage}
