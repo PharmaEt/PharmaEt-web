@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
@@ -21,6 +22,7 @@ import {
   User,
   LogOut,
   Clock,
+  ChevronRight,
 } from "lucide-react";
 import { LucideIcon } from "lucide-react";
 
@@ -73,14 +75,55 @@ const navSections: NavSection[] = [
   },
 ];
 
+const STORAGE_KEY = "sidebar_collapsed";
+
 export function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const { user, logout, isOwner, canManageUsers, canManageCatalog } = useAuth();
+  const { user, logout, isOwner } = useAuth();
+
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [mounted, setMounted] = useState(false);
+
+  // Load collapsed state from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        setCollapsed(JSON.parse(saved));
+      }
+    } catch {
+      // ignore
+    }
+    setMounted(true);
+  }, []);
+
+  // Save collapsed state to localStorage
+  const toggleSection = useCallback((label: string) => {
+    setCollapsed((prev) => {
+      const next = { ...prev, [label]: !prev[label] };
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  }, []);
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
     if (href.includes("#")) return pathname === href.split("#")[0];
     return pathname.startsWith(href);
+  };
+
+  const isSectionActive = (items: NavSection["items"]) =>
+    items.some((item) => isActive(item.href));
+
+  const isSectionOpen = (label: string, items: NavSection["items"]) => {
+    // Auto-expand if section contains active route
+    if (isSectionActive(items)) return true;
+    // Use saved state, default to open
+    return !collapsed[label];
   };
 
   return (
@@ -124,29 +167,43 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
             if (filteredItems.length === 0) return null;
 
+            const open = mounted ? isSectionOpen(section.label, filteredItems) : true;
+
             return (
-              <div key={section.label} className="mt-6">
-                <p className="mb-1 px-3 text-[10px] font-medium uppercase tracking-widest text-neutral-600">
+              <div key={section.label} className="mt-4">
+                <button
+                  onClick={() => toggleSection(section.label)}
+                  className="flex w-full items-center justify-between rounded-md px-3 py-1.5 text-[10px] font-medium uppercase tracking-widest text-neutral-600 transition-colors hover:text-neutral-400"
+                >
                   {section.label}
-                </p>
-                {filteredItems.map((item) => {
-                  const active = isActive(item.href);
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={onClose}
-                      className={`mb-0.5 flex items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors duration-100 ${active
-                        ? "bg-white/10 text-white"
-                        : "text-neutral-400 hover:bg-white/5 hover:text-neutral-100"
-                        }`}
-                    >
-                      <Icon className="h-4 w-4 flex-shrink-0" />
-                      {item.label}
-                    </Link>
-                  );
-                })}
+                  <ChevronRight
+                    className={`h-3 w-3 transition-transform duration-200 ${open ? "rotate-90" : ""}`}
+                  />
+                </button>
+                <div
+                  className={`overflow-hidden transition-all duration-200 ease-in-out ${
+                    open ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+                  }`}
+                >
+                  {filteredItems.map((item) => {
+                    const active = isActive(item.href);
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={onClose}
+                        className={`mb-0.5 flex items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors duration-100 ${active
+                          ? "bg-white/10 text-white"
+                          : "text-neutral-400 hover:bg-white/5 hover:text-neutral-100"
+                          }`}
+                      >
+                        <Icon className="h-4 w-4 flex-shrink-0" />
+                        {item.label}
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
             );
           })}
