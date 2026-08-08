@@ -1,4 +1,4 @@
-type Status = "active" | "inactive" | "completed" | "pending" | "expired";
+type Status = "active" | "inactive" | "completed" | "pending" | "expired" | "draft" | "ordered" | "partially_received" | "received" | "cancelled";
 
 interface StatusBadgeProps {
   status: Status;
@@ -23,6 +23,26 @@ const statusConfig: Record<Status, { label: string; className: string }> = {
   },
   expired: {
     label: "Expired",
+    className: "bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400",
+  },
+  draft: {
+    label: "Draft",
+    className: "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400",
+  },
+  ordered: {
+    label: "Ordered",
+    className: "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400",
+  },
+  partially_received: {
+    label: "Partial",
+    className: "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400",
+  },
+  received: {
+    label: "Received",
+    className: "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400",
+  },
+  cancelled: {
+    label: "Cancelled",
     className: "bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400",
   },
 };
