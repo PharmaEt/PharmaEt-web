@@ -1,5 +1,5 @@
 import { apiFetch } from "./client";
-import { type ApiUser } from "@/lib/mock-data";
+import { type ApiUser } from "@/lib/types";
 export type { ApiUser };
 
 export interface UserPayload {

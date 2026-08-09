@@ -1,5 +1,5 @@
 import { apiFetch } from "./client";
-import { type ApiStock } from "@/lib/mock-data";
+import { type ApiStock } from "@/lib/types";
 
 export interface StockPayload {
   product_id: number;

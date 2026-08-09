@@ -1,5 +1,5 @@
 import { apiFetch } from "./client";
-import { type ApiProduct } from "@/lib/mock-data";
+import { type ApiProduct } from "@/lib/types";
 
 export interface ProductsResponse {
   data: ApiProduct[] | { data: ApiProduct[]; total?: number; current_page?: number };

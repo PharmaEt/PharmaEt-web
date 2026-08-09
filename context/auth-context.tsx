@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { type ApiUser } from "@/lib/mock-data";
+import { type ApiUser } from "@/lib/types";
 import { loginUser, getSelfProfile, logoutUser } from "@/lib/api/auth";
 import { checkApiHealth } from "@/lib/api/health";
 

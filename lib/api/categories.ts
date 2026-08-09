@@ -1,5 +1,5 @@
 import { apiFetch } from "./client";
-import { type ApiCategory } from "@/lib/mock-data";
+import { type ApiCategory } from "@/lib/types";
 
 export interface CategoryPayload {
   name: string;

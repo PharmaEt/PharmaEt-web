@@ -1,5 +1,5 @@
 import { apiFetch } from "./client";
-import type { ApiSupplier, ApiBranch, ApiProduct } from "@/lib/mock-data";
+import type { ApiSupplier, ApiBranch, ApiProduct } from "@/lib/types";
 
 export interface ApiPurchaseOrderItem {
   id: number;

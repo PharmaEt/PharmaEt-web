@@ -1,5 +1,5 @@
 import { apiFetch } from "./client";
-import type { ApiSale } from "@/lib/mock-data";
+import type { ApiSale } from "@/lib/types";
 
 export interface DashboardResponse {
   data: {

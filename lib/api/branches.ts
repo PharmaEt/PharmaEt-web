@@ -1,5 +1,5 @@
 import { apiFetch } from "./client";
-import { type ApiBranch } from "@/lib/mock-data";
+import { type ApiBranch } from "@/lib/types";
 
 export interface BranchPayload {
   name: string;

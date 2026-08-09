@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import { Search, Pill, Sparkles, Check, ChevronDown, X } from "lucide-react";
-import type { ApiProduct } from "@/lib/mock-data";
+import type { ApiProduct } from "@/lib/types";
 
 interface ProductPickerProps {
   products: ApiProduct[];
