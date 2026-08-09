@@ -8,7 +8,7 @@ import { getDashboard, type DashboardResponse } from "@/lib/api/dashboard";
 import { getBranches } from "@/lib/api/branches";
 import { AreaChartCard, type AreaChartPoint } from "@/components/ui/charts/area-chart-card";
 import { DonutChartCard, type DonutChartSegment } from "@/components/ui/charts/donut-chart-card";
-import type { ApiBranch, ApiSale } from "@/lib/mock-data";
+import type { ApiBranch, ApiSale } from "@/lib/types";
 
 const saleColumns = [
   {
@@ -147,11 +147,13 @@ export default function DashboardPage() {
   const cardSales = recentSales.filter((s) => s.payment_type === "card").reduce((acc, s) => acc + Number(s.total), 0);
   const mobileSales = recentSales.filter((s) => s.payment_type === "mobile_money" || s.payment_type === "bank_transfer").reduce((acc, s) => acc + Number(s.total), 0);
 
-  const paymentSegments: DonutChartSegment[] = [
-    { label: "Cash Sales", value: cashSales > 0 ? cashSales : 12500, color: "#10B981" },
-    { label: "Mobile Money (Telebirr)", value: mobileSales > 0 ? mobileSales : 8400, color: "#3B82F6" },
-    { label: "Card Payments", value: cardSales > 0 ? cardSales : 3200, color: "#8B5CF6" },
-  ];
+  const paymentSegments: DonutChartSegment[] = cashSales > 0 || mobileSales > 0 || cardSales > 0
+    ? [
+        ...(cashSales > 0 ? [{ label: "Cash Sales", value: cashSales, color: "#10B981" }] : []),
+        ...(mobileSales > 0 ? [{ label: "Mobile Money (Telebirr)", value: mobileSales, color: "#3B82F6" }] : []),
+        ...(cardSales > 0 ? [{ label: "Card Payments", value: cardSales, color: "#8B5CF6" }] : []),
+      ]
+    : [];
 
   return (
     <div className="space-y-4 sm:space-y-6">
