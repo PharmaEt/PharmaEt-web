@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/context/auth-context";
-import { type ApiBranch } from "@/lib/mock-data";
+import { type ApiBranch } from "@/lib/types";
 import { getBranch, updateBranch } from "@/lib/api/branches";
 import { getUsers, type ApiUser as SystemUser } from "@/lib/api/users";
 

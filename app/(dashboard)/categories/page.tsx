@@ -8,7 +8,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/context/auth-context";
-import { type ApiCategory } from "@/lib/mock-data";
+import { type ApiCategory } from "@/lib/types";
 import { getCategories, deleteCategory } from "@/lib/api/categories";
 import { extractListData, extractPaginationMeta } from "@/lib/api/client";
 import { Pagination } from "@/components/ui/pagination";

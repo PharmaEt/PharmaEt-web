@@ -6,11 +6,11 @@ import Link from "next/link";
 import { ArrowLeft, ShoppingCart, DollarSign, Package, Calendar, TrendingUp } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/context/auth-context";
-import { type ApiSupplier } from "@/lib/mock-data";
+import { type ApiSupplier } from "@/lib/types";
 import { getSupplier, updateSupplier } from "@/lib/api/suppliers";
 import { getPurchaseOrders, type ApiPurchaseOrder } from "@/lib/api/purchase-orders";
 import { getStockBatches } from "@/lib/api/stock";
-import { type ApiStock } from "@/lib/mock-data";
+import { type ApiStock } from "@/lib/types";
 import { extractListData } from "@/lib/api/client";
 import { StatusBadge } from "@/components/ui/status-badge";
 

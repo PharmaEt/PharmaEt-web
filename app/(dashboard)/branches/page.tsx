@@ -9,7 +9,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/context/auth-context";
-import { type ApiBranch } from "@/lib/mock-data";
+import { type ApiBranch } from "@/lib/types";
 import { getBranches, deleteBranch } from "@/lib/api/branches";
 import { extractListData, extractPaginationMeta } from "@/lib/api/client";
 import { Pagination } from "@/components/ui/pagination";
