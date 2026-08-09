@@ -150,10 +150,10 @@ export default function POSPage() {
   };
 
   const unifiedProducts: UnifiedProduct[] = posProducts.map((p) => {
-    const packSize = (p as any).pack_size ?? (p as any).details?.pack_size ?? 1;
+    const packSize = p.pack_size || 1;
     const unitPrice = Number(p.selling_price);
-    const packPrice = (p as any).pack_selling_price
-      ? Number((p as any).pack_selling_price)
+    const packPrice = p.pack_selling_price
+      ? Number(p.pack_selling_price)
       : Number((unitPrice * packSize).toFixed(2));
 
     return {

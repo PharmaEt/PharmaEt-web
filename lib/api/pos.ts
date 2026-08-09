@@ -7,6 +7,8 @@ export interface PosProduct {
   type: "Medicine" | "Cosmetic";
   available_quantity: number;
   selling_price: number;
+  pack_size: number;
+  pack_selling_price: number;
   fefo_stock_id: number;
   earliest_expiry_date: string | null;
   details?: any;
