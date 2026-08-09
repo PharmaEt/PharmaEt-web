@@ -11,7 +11,7 @@ import { getSuppliers } from "@/lib/api/suppliers";
 import { getBranches } from "@/lib/api/branches";
 import { extractListData } from "@/lib/api/client";
 import { ProductPicker } from "@/components/ui/product-picker";
-import { type ApiProduct, type ApiSupplier, type ApiBranch } from "@/lib/mock-data";
+import { type ApiProduct, type ApiSupplier, type ApiBranch } from "@/lib/types";
 
 export default function NewStockAdjustmentPage() {
   const router = useRouter();

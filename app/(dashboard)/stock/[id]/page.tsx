@@ -7,7 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { getStockBatch } from "@/lib/api/stock";
 import { formatDate } from "@/lib/utils";
-import type { ApiStock } from "@/lib/mock-data";
+import type { ApiStock } from "@/lib/types";
 
 function getProductName(stock: ApiStock): string {
   const p = stock.product as any;

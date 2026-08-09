@@ -11,7 +11,7 @@ import { getBranches } from "@/lib/api/branches";
 import { getStockTransfers, type ApiStockTransfer } from "@/lib/api/stock-transfers";
 import { extractListData, extractPaginationMeta } from "@/lib/api/client";
 import { Pagination } from "@/components/ui/pagination";
-import type { ApiBranch } from "@/lib/mock-data";
+import type { ApiBranch } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 
 export default function StockTransfersPage() {

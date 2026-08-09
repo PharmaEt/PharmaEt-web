@@ -16,7 +16,7 @@ import {
   rejectStockTransfer,
   type ApiStockTransfer,
 } from "@/lib/api/stock-transfers";
-import type { ApiBranch } from "@/lib/mock-data";
+import type { ApiBranch } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 
 export default function StockTransferDetailPage() {

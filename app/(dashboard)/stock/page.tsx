@@ -11,7 +11,7 @@ import { getStockBatches } from "@/lib/api/stock";
 import { extractListData, extractPaginationMeta } from "@/lib/api/client";
 import { Pagination } from "@/components/ui/pagination";
 import { formatDate } from "@/lib/utils";
-import type { ApiStock } from "@/lib/mock-data";
+import type { ApiStock } from "@/lib/types";
 
 function getProductName(stock: ApiStock): string {
   const p = stock.product as any;

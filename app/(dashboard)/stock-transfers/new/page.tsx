@@ -10,7 +10,7 @@ import { getProducts } from "@/lib/api/products";
 import { createStockTransfer } from "@/lib/api/stock-transfers";
 import { extractListData } from "@/lib/api/client";
 import { ProductPicker } from "@/components/ui/product-picker";
-import type { ApiBranch, ApiProduct } from "@/lib/mock-data";
+import type { ApiBranch, ApiProduct } from "@/lib/types";
 
 interface ItemRow {
   product_id: number;
