@@ -11,7 +11,7 @@ import { getProducts } from "@/lib/api/products";
 import { createPurchaseOrder } from "@/lib/api/purchase-orders";
 import { extractListData } from "@/lib/api/client";
 import { ProductPicker } from "@/components/ui/product-picker";
-import type { ApiSupplier, ApiBranch, ApiProduct } from "@/lib/mock-data";
+import type { ApiSupplier, ApiBranch, ApiProduct } from "@/lib/types";
 
 interface POItem {
   product_id: string;

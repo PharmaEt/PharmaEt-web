@@ -6,7 +6,7 @@ import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/ui/page-header";
 import { getBranches } from "@/lib/api/branches";
 import { extractListData } from "@/lib/api/client";
-import type { ApiUser, ApiBranch } from "@/lib/mock-data";
+import type { ApiUser, ApiBranch } from "@/lib/types";
 import { Send } from "lucide-react";
 import { updateProfile, updatePassword, testTelegram } from "@/lib/api/auth";
 

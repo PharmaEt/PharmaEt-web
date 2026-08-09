@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Search, X, Minus, Plus, ShoppingCart, Check, Printer, DollarSign, Clock, Lock, ShieldCheck } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
-import type { ApiMedicine, ApiCosmetic, ApiCategory } from "@/lib/mock-data";
+import type { ApiMedicine, ApiCosmetic, ApiCategory } from "@/lib/types";
 import { useAuth } from "@/context/auth-context";
 import { Receipt } from "@/components/ui/receipt";
 import { StartShiftModal } from "@/components/pos/start-shift-modal";

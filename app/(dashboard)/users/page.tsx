@@ -10,7 +10,7 @@ import { RoleBadge } from "@/components/ui/role-badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/context/auth-context";
-import { type ApiUser } from "@/lib/mock-data";
+import { type ApiUser } from "@/lib/types";
 import { getUsers, deleteUser } from "@/lib/api/users";
 import { extractListData, extractPaginationMeta } from "@/lib/api/client";
 import { Pagination } from "@/components/ui/pagination";

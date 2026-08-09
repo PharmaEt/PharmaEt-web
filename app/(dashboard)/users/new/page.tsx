@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
-import { type ApiBranch } from "@/lib/mock-data";
+import { type ApiBranch } from "@/lib/types";
 import { createUser } from "@/lib/api/users";
 import { getBranches } from "@/lib/api/branches";
 
