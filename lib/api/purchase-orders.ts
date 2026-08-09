@@ -46,6 +46,8 @@ export interface ReceivePurchaseOrderPayload {
     quantity_pack: number;
     batch_number?: string;
     expiry_date?: string;
+    pack_selling_price?: number;
+    selling_price?: number;
   }>;
 }
 

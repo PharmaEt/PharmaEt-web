@@ -305,7 +305,7 @@ export default function CosmeticDetailPage() {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-neutral-500">Pack Size</span>
-                <span>{cosmetic.pack_size ?? 1} units</span>
+                <span>{cosmetic.pack_size ?? 1} units/pack</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-neutral-500">Min Stock Alert</span>

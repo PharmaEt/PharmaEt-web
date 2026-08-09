@@ -139,9 +139,16 @@ export default function StockPage() {
       render: (item: ApiStock) => {
         const minAlert = item.product?.min_stock_alert ?? 10;
         const isLow = item.quantity <= minAlert;
+        const packSize = (item.product as any)?.pack_size ?? 1;
         return (
           <span className={`font-semibold text-sm ${isLow ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"}`}>
-            {item.quantity} units
+            {packSize > 1 ? (
+              <span title={`${item.quantity} base units`}>
+                {Math.floor(item.quantity / packSize)} packs ({item.quantity} units)
+              </span>
+            ) : (
+              <span>{item.quantity} units</span>
+            )}
           </span>
         );
       },

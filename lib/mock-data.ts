@@ -134,6 +134,8 @@ export interface ApiPosProduct {
   type: "Medicine" | "Cosmetic";
   available_quantity: number;
   selling_price: string;
+  pack_size: number;
+  pack_selling_price: number;
   fefo_stock_id?: number | null;
   earliest_expiry_date?: string | null;
   details: {

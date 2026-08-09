@@ -160,7 +160,7 @@ export default function SaleDetailPage() {
               {(sale.items || []).map((item) => (
                 <tr key={item.id} className="border-b border-neutral-200 last:border-b-0 dark:border-neutral-800">
                   <td className="px-4 py-2.5 text-sm font-medium">{item.product?.name ?? `Product #${item.product_id}`}</td>
-                  <td className="px-4 py-2.5 text-sm text-right text-neutral-600 dark:text-neutral-400">{item.quantity}</td>
+                  <td className="px-4 py-2.5 text-sm text-right text-neutral-600 dark:text-neutral-400">{item.quantity} units</td>
                   <td className="px-4 py-2.5 text-sm text-right text-neutral-600 dark:text-neutral-400">{Number(item.selling_price).toLocaleString()} ETB</td>
                   <td className="px-4 py-2.5 text-sm text-right font-medium">{Number(item.total).toLocaleString()} ETB</td>
                 </tr>
@@ -213,6 +213,7 @@ export default function SaleDetailPage() {
               qty: item.quantity,
               price: Number(item.selling_price),
               total: Number(item.total),
+              unit: (item.product as any)?.pack_size > 1 ? "pack" : "single",
             })),
             subtotal,
             discount,

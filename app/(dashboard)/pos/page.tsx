@@ -454,7 +454,15 @@ export default function POSPage() {
                     </td>
                     <td className="px-4 py-2.5 text-right text-sm text-neutral-600 dark:text-neutral-400">{prod.pack_price.toFixed(2)} ETB</td>
                     <td className="px-4 py-2.5 text-right text-sm text-neutral-600 dark:text-neutral-400">{prod.unit_price.toFixed(2)} ETB</td>
-                    <td className="px-4 py-2.5 text-right text-sm font-medium">{prod.current_stock}</td>
+                    <td className="px-4 py-2.5 text-right text-sm font-medium">
+                      {prod.pack_size > 1 ? (
+                        <span title={`${prod.current_stock} base units`}>
+                          {Math.floor(prod.current_stock / prod.pack_size)}p ({prod.current_stock}u)
+                        </span>
+                      ) : (
+                        <span>{prod.current_stock} units</span>
+                      )}
+                    </td>
                     <td className="px-4 py-2.5 text-center">
                       <div className="inline-flex gap-1">
                         <button
@@ -520,9 +528,13 @@ export default function POSPage() {
                       {cat?.name ?? "—"}
                     </span>
                     {isLow ? (
-                      <span className="text-xs font-medium text-amber-600">Low ({prod.current_stock})</span>
+                      <span className="text-xs font-medium text-amber-600">
+                        Low ({prod.pack_size > 1 ? `${Math.floor(prod.current_stock / prod.pack_size)}p` : `${prod.current_stock}u`})
+                      </span>
                     ) : (
-                      <span className="text-xs text-neutral-400">{prod.current_stock}</span>
+                      <span className="text-xs text-neutral-400">
+                        {prod.pack_size > 1 ? `${Math.floor(prod.current_stock / prod.pack_size)}p (${prod.current_stock}u)` : `${prod.current_stock} units`}
+                      </span>
                     )}
                   </div>
                 </div>

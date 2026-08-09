@@ -116,7 +116,7 @@ export default function StockDetailPage() {
           <div>
             <p className="text-xs text-neutral-500">Quantity</p>
             <p className={`text-sm font-semibold ${isLow ? "text-red-600 dark:text-red-400" : ""}`}>
-              {stock.quantity}
+              {stock.quantity} units
               {isLow && (
                 <span className="ml-1.5 text-[10px] font-medium text-red-600 bg-red-50 px-1 py-0.5 rounded dark:bg-red-950 dark:text-red-400">
                   LOW

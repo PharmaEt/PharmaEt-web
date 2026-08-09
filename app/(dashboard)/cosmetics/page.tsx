@@ -108,6 +108,15 @@ export default function CosmeticsPage() {
       hideOnMobile: true,
     },
     {
+      key: "pack_size",
+      header: "Pack Size",
+      render: (item: ApiProduct) => {
+        const packSize = (item as any).pack_size ?? (item as any).details?.pack_size ?? 1;
+        return <span className="text-sm text-neutral-600 dark:text-neutral-400">{packSize} units</span>;
+      },
+      hideOnMobile: true,
+    },
+    {
       key: "actions",
       header: "Actions",
       render: (item: ApiProduct) => (

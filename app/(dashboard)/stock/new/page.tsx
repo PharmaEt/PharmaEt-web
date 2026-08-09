@@ -166,7 +166,7 @@ export default function NewStockAdjustmentPage() {
 
             <div>
               <label htmlFor="quantity" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                Quantity Received (Units / Packs)
+                Quantity Received (Units)
               </label>
               <input
                 id="quantity"
@@ -178,6 +178,7 @@ export default function NewStockAdjustmentPage() {
                 placeholder="e.g., 100"
                 className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:focus:border-neutral-600"
               />
+              <p className="mt-1 text-[11px] text-neutral-400">Enter total individual units. For 5 packs of 10 units each, enter 50.</p>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">

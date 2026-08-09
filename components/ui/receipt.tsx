@@ -93,7 +93,7 @@ export function Receipt({ data, onPrint }: ReceiptProps) {
         ${data.items.map((item) => `
           <div class="item-row">
             <span style="flex:1">${item.name}</span>
-            <span style="width:30px;text-align:right">${item.qty}</span>
+            <span style="width:30px;text-align:right">${item.qty}${item.unit === "pack" ? "p" : ""}</span>
             <span style="width:60px;text-align:right">${item.total.toFixed(2)}</span>
           </div>
         `).join("")}
@@ -181,7 +181,7 @@ export function Receipt({ data, onPrint }: ReceiptProps) {
           <div key={idx}>
             <div className="flex justify-between py-1">
               <span className="flex-1 truncate">{item.name}{item.unit ? ` (${item.unit})` : ""}</span>
-              <span className="w-8 text-right">{item.qty}</span>
+              <span className="w-8 text-right">{item.qty}{item.unit === "pack" ? "p" : ""}</span>
               <span className="w-16 text-right">{item.total.toFixed(2)}</span>
             </div>
           </div>
