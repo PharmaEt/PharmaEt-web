@@ -7,7 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { getCategories } from "@/lib/api/categories";
 import { getCosmetic, updateCosmetic } from "@/lib/api/cosmetics";
-import type { ApiCategory, ApiProduct } from "@/lib/mock-data";
+import type { ApiCategory, ApiProduct } from "@/lib/types";
 
 export default function CosmeticEditPage() {
   const router = useRouter();

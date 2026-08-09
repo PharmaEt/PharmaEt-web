@@ -9,7 +9,7 @@ import { useAuth } from "@/context/auth-context";
 import { getMedicine, updateMedicine } from "@/lib/api/medicines";
 import { getCategories } from "@/lib/api/categories";
 import { extractListData } from "@/lib/api/client";
-import { type ApiProduct, type ApiCategory } from "@/lib/mock-data";
+import { type ApiProduct, type ApiCategory } from "@/lib/types";
 
 export default function MedicineDetailPage() {
   const router = useRouter();

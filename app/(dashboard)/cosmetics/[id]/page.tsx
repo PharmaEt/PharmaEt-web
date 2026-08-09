@@ -9,7 +9,7 @@ import { useAuth } from "@/context/auth-context";
 import { getCosmetic, updateCosmetic } from "@/lib/api/cosmetics";
 import { getCategories } from "@/lib/api/categories";
 import { extractListData } from "@/lib/api/client";
-import { type ApiProduct, type ApiCategory } from "@/lib/mock-data";
+import { type ApiProduct, type ApiCategory } from "@/lib/types";
 
 export default function CosmeticDetailPage() {
   const router = useRouter();

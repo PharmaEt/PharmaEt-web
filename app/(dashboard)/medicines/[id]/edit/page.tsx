@@ -7,7 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { getCategories } from "@/lib/api/categories";
 import { getMedicine, updateMedicine } from "@/lib/api/medicines";
-import type { ApiCategory, ApiProduct } from "@/lib/mock-data";
+import type { ApiCategory, ApiProduct } from "@/lib/types";
 
 export default function MedicineEditPage() {
   const router = useRouter();

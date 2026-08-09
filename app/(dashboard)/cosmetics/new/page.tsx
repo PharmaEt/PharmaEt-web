@@ -9,7 +9,7 @@ import { createCosmetic } from "@/lib/api/cosmetics";
 import { getCategories } from "@/lib/api/categories";
 import { getBranches } from "@/lib/api/branches";
 import { extractListData } from "@/lib/api/client";
-import { type ApiCategory, type ApiBranch } from "@/lib/mock-data";
+import { type ApiCategory, type ApiBranch } from "@/lib/types";
 
 export default function NewCosmeticPage() {
   const router = useRouter();
