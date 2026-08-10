@@ -249,7 +249,8 @@ export default function POSPage() {
     try {
       const itemsPayload = cart.map((item) => ({
         product_id: item.product.id,
-        quantity: item.unit === "pack" ? item.quantity * (item.product.pack_size || 1) : item.quantity,
+        quantity: item.quantity,
+        unit: item.unit,
       }));
 
       const res = await createSale({
@@ -277,6 +278,7 @@ export default function POSPage() {
       setLastSaleId(saleCode);
       setCompleted(true);
       toast("Sale created successfully", "success");
+      fetchPosData();
     } catch (err: unknown) {
       toast(err instanceof Error ? err.message : "Failed to create sale", "error");
     }
