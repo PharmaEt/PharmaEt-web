@@ -65,7 +65,7 @@ export async function createSale(payload: {
   discount?: number;
   discount_rate?: number;
   prescription_image?: string;
-  items: { product_id?: number; stock_id?: number; quantity: number }[];
+  items: { product_id?: number; stock_id?: number; quantity: number; unit?: "pack" | "single" }[];
 }): Promise<{ message: string; data: ApiSale }> {
   return apiFetch<{ message: string; data: ApiSale }>("/sales", {
     method: "POST",
